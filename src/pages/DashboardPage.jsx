@@ -24,7 +24,7 @@ import { useNotes } from "../features/notes/hooks/useNotes";
 import { deleteNote, togglePin, toggleFavorite } from "../features/notes/services/notesService";
 import { useDebounce } from "../utils/useDebounce";
 import toast from "react-hot-toast";
-import AdBlock from "../components/AdBlock";
+import AdSense from "../components/AdSense";
 
 const DashboardPage = () => {
   const [searchParams] = useSearchParams();
@@ -222,7 +222,9 @@ const DashboardPage = () => {
                 {/* Insert Native In-Feed AdBlock every 5 notes */}
                 {(index + 1) % 5 === 0 && (
                   <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                     <AdBlock format="fluid" sx={{ height: '100%', minHeight: 250, borderRadius: 4 }} />
+                     <Box sx={{ height: '100%', minHeight: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <AdSense adSlot="3200385772" />
+                     </Box>
                   </Grid>
                 )}
               </React.Fragment>

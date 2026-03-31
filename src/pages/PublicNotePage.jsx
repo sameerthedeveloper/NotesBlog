@@ -22,7 +22,7 @@ import {
 import { getNoteById, incrementViewCount } from "../features/notes/services/notesService";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
-import AdBlock from "../components/AdBlock";
+import AdSense from "../components/AdSense";
 
 const PublicNotePage = () => {
   const { id } = useParams();
@@ -183,7 +183,9 @@ const PublicNotePage = () => {
             <Divider sx={{ my: 8 }} />
             
             {/* End-of-note Monitization Block */}
-            <AdBlock sx={{ width: '100%', mb: 4, borderRadius: 4 }} />
+            <Box sx={{ width: '100%', mb: 4, display: 'flex', justifyContent: 'center' }}>
+                <AdSense adSlot="3200385772" />
+            </Box>
         </Box>
       </Stack>
     </Container>

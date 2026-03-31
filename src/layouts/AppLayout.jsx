@@ -47,7 +47,7 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
-import AdBlock from "../components/AdBlock";
+import AdSense from "../components/AdSense";
 
 const drawerWidth = 256;
 
@@ -387,7 +387,9 @@ const AppLayout = () => {
              >
                 <CloseIcon fontSize="inherit" />
              </IconButton>
-             <AdBlock format="horizontal" sx={{ minHeight: 60, borderRadius: 0, border: 'none' }} />
+             <Box sx={{ width: '100%', minHeight: 60, display: 'flex', justifyContent: 'center' }}>
+                <AdSense adSlot="3200385772" />
+             </Box>
            </Box>
         </Box>
       )}
