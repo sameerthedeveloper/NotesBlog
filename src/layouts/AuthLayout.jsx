@@ -61,7 +61,7 @@ const AuthLayout = () => {
                         lineHeight: 1
                     }}
                 >
-                    Notes Spot
+                    NotesBlog
                 </Typography>
                 <Typography variant="body1" color="text.secondary" fontWeight={500} sx={{ textAlign: "center", opacity: 0.8 }}>
                     Capture Ideas. Share Wisdom. Everywhere.

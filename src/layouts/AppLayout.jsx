@@ -190,7 +190,7 @@ const AppLayout = () => {
                   <MenuIcon />
                 </IconButton>
                 <Typography variant="h6" noWrap sx={{ fontWeight: 700, letterSpacing: "-0.5px", color: "text.primary", ml: 1, display: { xs: 'none', sm: 'block' } }}>
-                  Notes Spot
+                  NotesBlog
                 </Typography>
               </Stack>
               
