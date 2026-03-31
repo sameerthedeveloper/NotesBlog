@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, alpha, useTheme } from '@mui/material';
 
 const AdBlock = ({ 
-  client = '', 
-  slot = '', 
+  client = 'ca-pub-4366510851653349', 
+  slot = '3200385772', 
   format = 'auto', 
   responsive = 'true', 
   sx = {} 
