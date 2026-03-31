@@ -36,7 +36,7 @@ const PublicNotePage = () => {
         const fetchedNote = await getNoteById(id);
         if (fetchedNote && fetchedNote.visibility === "public") {
           setNote(fetchedNote);
-          incrementViewCount(id);
+          incrementViewCount(id).catch(err => console.error('Silent view count increment error:', err));
         } else {
           setNote(null);
         }

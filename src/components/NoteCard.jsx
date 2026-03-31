@@ -18,10 +18,11 @@ import {
   Favorite as FavoriteIcon, 
   FavoriteBorder as UnfavoriteIcon,
   DeleteOutline as DeleteIcon,
+  ShareOutlined as ShareIcon,
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 
-const NoteCard = ({ note, onDelete, onClick, onTogglePin, onToggleFavorite }) => {
+const NoteCard = ({ note, onDelete, onClick, onTogglePin, onToggleFavorite, onShare }) => {
   const { title, content, tags, visibility, updatedAt, isPinned, isFavorite } = note;
   const theme = useTheme();
 
@@ -139,6 +140,15 @@ const NoteCard = ({ note, onDelete, onClick, onTogglePin, onToggleFavorite }) =>
               sx={{ color: isFavorite ? "error.main" : "text.secondary", borderRadius: 2 }}
             >
               {isFavorite ? <FavoriteIcon fontSize="small" /> : <UnfavoriteIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Share Link">
+            <IconButton 
+                size="small" 
+                onClick={(e) => { e.stopPropagation(); if(onShare) onShare(e); }}
+                sx={{ color: "text.secondary", borderRadius: 2 }}
+            >
+              <ShareIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">

@@ -208,6 +208,15 @@ const DashboardPage = () => {
                     onDelete={() => handleDelete(note.id)}
                     onTogglePin={() => handleTogglePin(note.id, note.isPinned)}
                     onToggleFavorite={() => handleToggleFavorite(note.id, note.isFavorite)}
+                    onShare={(e) => {
+                      if(e) e.stopPropagation();
+                      const publicUrl = `${window.location.origin}/note/${note.id}`;
+                      navigator.clipboard.writeText(publicUrl);
+                      toast.success("Link copied!");
+                      if (note.visibility !== "public") {
+                        toast("Heads up: Guests can't view private notes.", { icon: "🔒" });
+                      }
+                    }}
                   />
                 </Grid>
                 {/* Insert Native In-Feed AdBlock every 5 notes */}
