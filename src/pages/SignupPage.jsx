@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   TextField, 
   Button, 
@@ -34,7 +34,10 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const { signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
+
+  const from = location.state?.from || "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,7 +50,7 @@ const SignupPage = () => {
     try {
       await signup(email, password, name);
       toast.success("Account created! Welcome.");
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || "Failed to create account");
     } finally {
@@ -60,7 +63,7 @@ const SignupPage = () => {
     try {
       await loginWithGoogle();
       toast.success("Success!");
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || "Google sign-in failed");
     }
@@ -190,7 +193,7 @@ const SignupPage = () => {
 
       <Typography variant="body2" color="text.secondary" align="center" sx={{ fontWeight: 600 }}>
         Already have a member account?{" "}
-        <Link to="/login" style={{ textDecoration: "none", color: theme.palette.primary.main, fontWeight: 900 }}>
+        <Link to="/login" state={{ from }} style={{ textDecoration: "none", color: theme.palette.primary.main, fontWeight: 900 }}>
           Sign In
         </Link>
       </Typography>

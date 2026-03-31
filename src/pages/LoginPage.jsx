@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   TextField, 
   Button, 
@@ -31,7 +31,10 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
+
+  const from = location.state?.from || "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +43,7 @@ const LoginPage = () => {
     try {
       await login(email, password);
       toast.success("Welcome back!");
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || "Invalid credentials");
     } finally {
@@ -53,7 +56,7 @@ const LoginPage = () => {
     try {
       await loginWithGoogle();
       toast.success("Logged in with Google!");
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || "Google sign-in failed");
     }
@@ -148,7 +151,7 @@ const LoginPage = () => {
 
       <Typography variant="body2" color="text.secondary" align="center" sx={{ fontWeight: 600 }}>
         Not a member yet?{" "}
-        <Link to="/signup" style={{ textDecoration: "none", color: theme.palette.primary.main, fontWeight: 900 }}>
+        <Link to="/signup" state={{ from }} style={{ textDecoration: "none", color: theme.palette.primary.main, fontWeight: 900 }}>
           Join the Workspace
         </Link>
       </Typography>
