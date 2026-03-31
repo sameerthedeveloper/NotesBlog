@@ -32,3 +32,8 @@ code {
 .pdf-attachment a:hover {
   background-color: #0842A0;
 }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}

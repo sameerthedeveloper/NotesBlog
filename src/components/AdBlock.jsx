@@ -16,12 +16,13 @@ const AdBlock = ({
     if (isDevPlaceholder) return;
 
     try {
+      // Ensure the adsbygoogle array exists
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
-      console.error("AdSense Block Error", err);
-      setAdError(true);
+      console.warn("AdSense logic pushed too early or blocked. This is normal in some SPAs.", err);
+      // We don't necessarily set error here because AdSense handles its own retries
     }
-  }, [isDevPlaceholder]);
+  }, [isDevPlaceholder, slot]); // Added slot for route-based refreshes
 
   // If no credentials are provided or an error occurs, render a clean Material Design placeholder box
   if (isDevPlaceholder || adError) {

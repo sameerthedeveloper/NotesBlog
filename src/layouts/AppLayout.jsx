@@ -42,10 +42,12 @@ import {
   SettingsOutlined as SettingsIcon,
   AppsOutlined as AppsIcon,
   Clear as ClearIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  Close as CloseIcon
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
+import AdBlock from "../components/AdBlock";
 
 const drawerWidth = 256;
 
@@ -58,6 +60,7 @@ const AppLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [showAnchorAd, setShowAnchorAd] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   
@@ -348,11 +351,45 @@ const AppLayout = () => {
       {isMobile && (
           <Fab 
             color="primary" 
-            sx={{ position: "fixed", bottom: 24, right: 24, borderRadius: 4, boxShadow: '0px 4px 20px rgba(0,0,0,0.15)' }}
+            sx={{ position: "fixed", bottom: showAnchorAd ? 120 : 24, right: 24, borderRadius: 4, boxShadow: '0px 4px 20px rgba(0,0,0,0.15)', transition: 'bottom 0.3s' }}
             onClick={() => navigate("/note/new")}
           >
             <AddIcon />
           </Fab>
+      )}
+
+      {/* Modern AdMob-style Sticky Anchor Ad (Mobile Only) */}
+      {isMobile && showAnchorAd && (
+        <Box sx={{ 
+            position: "fixed", 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            zIndex: 1000, 
+            bgcolor: "background.paper", 
+            borderTop: `1px solid ${theme.palette.divider}`,
+            boxShadow: "0px -4px 12px rgba(0,0,0,0.05)",
+            animation: 'slideUp 0.4s ease-out'
+        }}>
+           <Box sx={{ position: 'relative', pt: 1, pb: 0.5 }}>
+             <IconButton 
+                size="small" 
+                onClick={() => setShowAnchorAd(false)}
+                sx={{ 
+                    position: 'absolute', 
+                    top: -16, 
+                    right: 8, 
+                    bgcolor: 'background.paper', 
+                    border: `1px solid ${theme.palette.divider}`,
+                    boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
+                    '&:hover': { bgcolor: 'action.hover' }
+                }}
+             >
+                <CloseIcon fontSize="inherit" />
+             </IconButton>
+             <AdBlock format="horizontal" sx={{ minHeight: 60, borderRadius: 0, border: 'none' }} />
+           </Box>
+        </Box>
       )}
     </Box>
   );
