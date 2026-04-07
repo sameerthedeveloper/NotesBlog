@@ -36,7 +36,8 @@ import {
   CloudDoneOutlined as SavedIcon,
   CloudSyncOutlined as SavingIcon,
   MoreVert as MoreIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  VisibilityOutlined as ViewIcon
 } from "@mui/icons-material";
 import NoteEditor from "../components/NoteEditor";
 import TagInput from "../components/TagInput";
