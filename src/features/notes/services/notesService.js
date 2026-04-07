@@ -17,7 +17,9 @@ import {
   onSnapshot,
   limit,
   startAfter,
-  increment
+  increment,
+  setDoc,
+  collectionGroup
 } from "firebase/firestore";
 import {
   ref,
@@ -96,9 +98,63 @@ export const toggleFavorite = async (noteId, isFavorite) => {
   await updateDoc(docRef, { isFavorite });
 };
 
-export const incrementViewCount = async (noteId) => {
+export const incrementViewCount = async (noteId, viewerInfo = null) => {
   const docRef = doc(db, NOTES_COLLECTION, noteId);
+  
+  // 1. Increment total count
   await updateDoc(docRef, { viewCount: increment(1) });
+
+  // 2. Log viewer details
+  if (viewerInfo) {
+    // Use provide UID or generate a guest-session-based one for guests
+    const viewerId = viewerInfo.uid || "guest_" + Date.now();
+    const viewRef = doc(db, NOTES_COLLECTION, noteId, "views", viewerId);
+    
+    const viewData = {
+      uid: viewerId,
+      displayName: viewerInfo.displayName || "Guest Viewer",
+      lastViewedAt: serverTimestamp(),
+      viewCount: increment(1)
+    };
+
+    // Add optional fields if provided
+    if (viewerInfo.email) viewData.email = viewerInfo.email;
+    if (viewerInfo.photoURL) viewData.photoURL = viewerInfo.photoURL;
+
+    await setDoc(viewRef, viewData, { merge: true });
+  } else {
+    // Basic anonymous guest (fallback)
+    const viewRef = doc(db, NOTES_COLLECTION, noteId, "views", "anon_" + Date.now());
+    await setDoc(viewRef, {
+      uid: "anonymous",
+      displayName: "Anonymous Viewer",
+      lastViewedAt: serverTimestamp()
+    });
+  }
+};
+
+export const subscribeNoteById = (noteId, callback) => {
+  const docRef = doc(db, NOTES_COLLECTION, noteId);
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback({ id: docSnap.id, ...docSnap.data() });
+    } else {
+      callback(null);
+    }
+  });
+};
+
+export const subscribeNoteViews = (noteId, callback) => {
+  const viewsRef = collection(db, NOTES_COLLECTION, noteId, "views");
+  const q = query(viewsRef, orderBy("lastViewedAt", "desc"), limit(100));
+  
+  return onSnapshot(q, (snapshot) => {
+    const views = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(views);
+  });
 };
 
 export const deleteNote = async (noteId) => {

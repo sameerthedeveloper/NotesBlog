@@ -40,6 +40,7 @@ import {
 } from "@mui/icons-material";
 import NoteEditor from "../components/NoteEditor";
 import TagInput from "../components/TagInput";
+import ViewersDialog from "../features/notes/components/ViewersDialog";
 import { useAuth } from "../context/AuthContext";
 import { 
   createNote, 
@@ -69,6 +70,7 @@ const NoteEditorPage = () => {
   const [lastSaved, setLastSaved] = useState(null);
   
   const [anchorEl, setAnchorEl] = useState(null);
+  const [viewersDialogOpen, setViewersDialogOpen] = useState(false);
   const debouncedContent = useDebounce(content, 2000);
   const debouncedTitle = useDebounce(title, 2000);
   const initialLoad = useRef(true);
@@ -223,6 +225,12 @@ const NoteEditorPage = () => {
                   <ListItemText>Revision history</ListItemText>
                 </MenuItem>
               )}
+              {id && (
+                <MenuItem onClick={() => { setAnchorEl(null); setViewersDialogOpen(true); }}>
+                  <ListItemIcon><ViewIcon fontSize="small" /></ListItemIcon>
+                  <ListItemText>Recent views</ListItemText>
+                </MenuItem>
+              )}
               <Divider />
               <MenuItem onClick={async () => {
                   if (window.confirm("Move to trash?")) {
@@ -292,6 +300,12 @@ const NoteEditorPage = () => {
           <NoteEditor content={content} onUpdate={setContent} />
         </Box>
       </Stack>
+
+      <ViewersDialog 
+        open={viewersDialogOpen} 
+        onClose={() => setViewersDialogOpen(false)} 
+        noteId={id} 
+      />
     </Container>
   );
 };

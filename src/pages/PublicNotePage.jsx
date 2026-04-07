@@ -11,7 +11,12 @@ import {
   Stack,
   Button,
   alpha,
-  useTheme
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions
 } from "@mui/material";
 import { 
   ArrowBack as BackIcon, 
@@ -19,10 +24,11 @@ import {
   VisibilityOutlined as ViewIcon,
   LoginOutlined as LoginIcon
 } from "@mui/icons-material";
-import { getNoteById, incrementViewCount } from "../features/notes/services/notesService";
+import { subscribeNoteById, incrementViewCount } from "../features/notes/services/notesService";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import AdSense from "../components/AdSense";
+import { useAuth } from "../context/AuthContext";
 
 const PublicNotePage = () => {
   const { id } = useParams();
@@ -30,25 +36,66 @@ const PublicNotePage = () => {
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
 
+  const { userProfile } = useAuth();
+  const [isNamePromptOpen, setIsNamePromptOpen] = useState(false);
+  const [visitorName, setVisitorName] = useState("");
+
   useEffect(() => {
-    const fetchNote = async () => {
-      try {
-        const fetchedNote = await getNoteById(id);
-        if (fetchedNote && fetchedNote.visibility === "public") {
-          setNote(fetchedNote);
-          incrementViewCount(id).catch(err => console.error('Silent view count increment error:', err));
-        } else {
-          setNote(null);
+    let hasIncremented = false;
+    const unsubscribe = subscribeNoteById(id, (fetchedNote) => {
+      if (fetchedNote && fetchedNote.visibility === "public") {
+        setNote(fetchedNote);
+        setLoading(false);
+        
+        // Handle increment logic
+        if (!hasIncremented) {
+          if (userProfile) {
+            // Priority 1: User Profile
+            incrementViewCount(id, userProfile).catch(err => console.error('View increment error:', err));
+            hasIncremented = true;
+          } else {
+             // Priority 2: Guest tracking from LocalStorage
+             const storedName = localStorage.getItem("guest_viewer_name");
+             const storedId = localStorage.getItem("guest_viewer_id");
+             
+             if (storedName) {
+                incrementViewCount(id, { 
+                    uid: storedId || "guest_" + Date.now(), 
+                    displayName: storedName 
+                }).catch(err => console.error('View increment error:', err));
+                hasIncremented = true;
+             } else {
+                // Priority 3: Prompt for name if none found
+                setIsNamePromptOpen(true);
+                // We'll increment after the prompt is submitted
+             }
+          }
         }
-      } catch (error) {
-        console.error("Error fetching public note", error);
+      } else {
         setNote(null);
-      } finally {
         setLoading(false);
       }
-    };
-    fetchNote();
-  }, [id]);
+    });
+
+    return () => unsubscribe();
+  }, [id, userProfile]);
+
+  const handleSubmitVisitorName = () => {
+    const trimmedName = visitorName.trim() || "Guest Reader";
+    const guestId = "guest_" + Date.now();
+    
+    // Save for future visits
+    localStorage.setItem("guest_viewer_name", trimmedName);
+    localStorage.setItem("guest_viewer_id", guestId);
+    
+    // Increment count
+    incrementViewCount(id, { 
+        uid: guestId, 
+        displayName: trimmedName 
+    }).catch(err => console.error('View increment error:', err));
+    
+    setIsNamePromptOpen(false);
+  };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -188,6 +235,41 @@ const PublicNotePage = () => {
             </Box>
         </Box>
       </Stack>
+
+      <Dialog 
+        open={isNamePromptOpen} 
+        disableEscapeKeyDown
+        PaperProps={{ sx: { borderRadius: 2, px: 1, py: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Welcome to Notes Spot</DialogTitle>
+        <DialogContent>
+            <Typography variant="body2" sx={{ mb: 2, fontWeight: 500, color: 'text.secondary' }}>
+                How would you like to be remembered as a reader?
+            </Typography>
+            <TextField
+                autoFocus
+                fullWidth
+                placeholder="Your name"
+                variant="outlined"
+                value={visitorName}
+                onChange={(e) => setVisitorName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmitVisitorName()}
+                sx={{ 
+                    "& .MuiOutlinedInput-root": { borderRadius: 1.5, fontWeight: 700 }
+                }}
+            />
+        </DialogContent>
+        <DialogActions sx={{ pb: 3, px: 3 }}>
+            <Button 
+                fullWidth 
+                variant="contained" 
+                onClick={handleSubmitVisitorName}
+                sx={{ borderRadius: 1.5, py: 1.5, fontWeight: 800 }}
+            >
+                Start reading
+            </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
