@@ -9,22 +9,32 @@ service cloud.firestore {
     
     // --- Notes ---
     match /notes/{noteId} {
+      // Allow read if note is public OR user is author (or note doesn't exist yet)
       allow read: if resource == null || (
           resource.data.visibility == 'public' || 
           (request.auth != null && request.auth.uid == resource.data.authorId)
       );
       
       allow create: if request.auth != null && 
-          request.resource.data.authorId == request.auth.uid &&
-          request.resource.data.title is string &&
-          request.resource.data.content is string;
+          request.resource.data.authorId == request.auth.uid;
           
-      allow update: if request.auth != null && 
-          resource.data.authorId == request.auth.uid &&
-          request.resource.data.authorId == resource.data.authorId;
-          
+      // Allow update if author OR if it's a public note incrementing viewCount
+      allow update: if (request.auth != null && resource.data.authorId == request.auth.uid) ||
+          (resource.data.visibility == 'public' && 
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']));
+           
       allow delete: if request.auth != null && 
           resource.data.authorId == request.auth.uid;
+
+      // --- Views Subcollection ---
+      match /views/{viewId} {
+        // Only the note's author can see the list of viewers
+        allow read: if request.auth != null && 
+            get(/databases/$(database)/documents/notes/$(noteId)).data.authorId == request.auth.uid;
+        
+        // Anyone can record a view if the note is public
+        allow create, update: if get(/databases/$(database)/documents/notes/$(noteId)).data.visibility == 'public';
+      }
     }
     
     // --- Global Access Denied by Default ---
