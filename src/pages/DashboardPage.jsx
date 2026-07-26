@@ -177,10 +177,11 @@ export const DashboardPage = () => {
     <Paper
       variant="outlined"
       sx={{
-        p: 2.25,
-        borderRadius: 3,
-        minHeight: 128,
+        p: { xs: 1.75, sm: 2.25 },
+        borderRadius: { xs: "20px", sm: 3 },
+        minHeight: { xs: 110, sm: 128 },
         width: "100%",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
@@ -192,55 +193,51 @@ export const DashboardPage = () => {
         "&:hover": {
           transform: "translateY(-2px)",
           borderColor: "primary.main",
-          boxShadow: (theme) => theme.palette.mode === "dark" 
-            ? "0 10px 24px rgba(0,0,0,0.3)" 
+          boxShadow: (theme) => theme.palette.mode === "dark"
+            ? "0 10px 24px rgba(0,0,0,0.3)"
             : "0 10px 24px rgba(11,87,208,0.08)"
         }
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Box 
-          sx={{ 
-            width: 38,
-            height: 38,
-            borderRadius: 2.5, 
-            bgcolor: iconBg, 
-            color: iconColor, 
+        <Box
+          sx={{
+            width: { xs: 34, sm: 38 },
+            height: { xs: 34, sm: 38 },
+            borderRadius: { xs: "10px", sm: 2.5 },
+            bgcolor: iconBg,
+            color: iconColor,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0
           }}
         >
-          {React.cloneElement(icon, { sx: { fontSize: 20 } })}
+          {React.cloneElement(icon, { sx: { fontSize: { xs: 18, sm: 20 } } })}
         </Box>
-        <Box sx={{ width: 70, height: 22, opacity: 0.35, pointerEvents: "none" }}>
+        <Box sx={{ width: 60, height: 20, opacity: 0.3, pointerEvents: "none", display: { xs: "block", sm: "block" } }}>
           {sparkline}
         </Box>
       </Stack>
 
-      <Box sx={{ mt: 1 }}>
-        <Typography 
-          variant="h4" 
-          fontWeight={700} 
-          sx={{ 
-            fontSize: "1.85rem", 
-            lineHeight: 1.1, 
+      <Box sx={{ mt: { xs: 0.75, sm: 1 } }}>
+        <Typography
+          fontWeight={700}
+          sx={{
+            fontSize: { xs: "1.6rem", sm: "1.85rem" },
+            lineHeight: 1.1,
             letterSpacing: "-0.02em",
-            color: "text.primary" 
+            color: "text.primary"
           }}
         >
           {count}
         </Typography>
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          fontWeight={500} 
-          sx={{ 
-            fontSize: "0.85rem", 
-            opacity: 0.85,
-            mt: 0.25
-          }}
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          fontWeight={500}
+          noWrap
+          sx={{ fontSize: { xs: "0.78rem", sm: "0.85rem" }, opacity: 0.85, mt: 0.2 }}
         >
           {title}
         </Typography>
@@ -249,20 +246,27 @@ export const DashboardPage = () => {
   );
 
   return (
-    <Box sx={{ width: "100%", pb: { xs: 8, sm: 4 } }}>
+    <Box sx={{ width: "100%", pb: { xs: 10, sm: 4 } }}>
       {/* Dashboard Header */}
-      <Box sx={{ mb: 3, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
-        <Box>
-          <Typography 
-            variant="h4" 
-            fontWeight={800} 
-            letterSpacing="-0.5px" 
-            sx={{ fontSize: { xs: "1.75rem", sm: "2.25rem" } }}
+      <Box sx={{ mb: { xs: 2.5, sm: 3 }, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            fontWeight={800}
+            letterSpacing="-0.5px"
+            sx={{
+              fontSize: { xs: "1.45rem", sm: "2.25rem" },
+              lineHeight: 1.2,
+              wordBreak: "break-word",
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+            }}
           >
-            Welcome back, {currentUser?.displayName?.split(" ")[0] || "User"}! 👋
+            Welcome back, {currentUser?.displayName?.split(" ")[0] || "User"} 👋
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, opacity: 0.85 }}>
-            Manage, edit, and share your rich HTML notes.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: "0.82rem", sm: "0.875rem" } }}>
+            Manage, edit, and share your notes.
           </Typography>
         </Box>
 
@@ -292,79 +296,88 @@ export const DashboardPage = () => {
 
       {/* Mobile Quick Action Cards (Visible only on mobile) */}
       {isMobile && (
-        <Stack direction="row" spacing={2} sx={{ mb: 3.5, width: "100%" }}>
+        <Stack direction="row" spacing={1.5} sx={{ mb: 3, width: "100%" }}>
+          {/* Auto Convert button */}
           <Paper
             variant="outlined"
             onClick={handleRunMigration}
             sx={{
               flex: 1,
-              p: 2,
-              borderRadius: 4,
+              px: 1.5,
+              py: 1.25,
+              borderRadius: "16px",
               cursor: "pointer",
               bgcolor: theme.palette.mode === "dark" ? "rgba(11, 87, 208, 0.12)" : "#EFF6FF",
               borderColor: alpha(theme.palette.primary.main, 0.2),
-              transition: "all 0.2s ease",
-              "&:active": { transform: "scale(0.98)" },
-              "&:hover": { borderColor: "primary.main" }
+              transition: "all 0.15s ease",
+              "&:active": { transform: "scale(0.97)", opacity: 0.9 },
             }}
           >
             <Stack direction="row" spacing={1.25} alignItems="center">
-              <Box 
-                sx={{ 
-                  p: 1, 
-                  borderRadius: 3, 
-                  bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "#FFFFFF", 
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "10px",
+                  bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "#FFFFFF",
                   color: "primary.main",
                   display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   flexShrink: 0
                 }}
               >
-                <MigrateIcon fontSize="small" />
+                <MigrateIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Box noWrap sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" fontWeight={700} color="primary.main" noWrap sx={{ fontSize: "0.85rem" }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" fontWeight={700} color="primary.main" noWrap sx={{ fontSize: "0.82rem", lineHeight: 1.3 }}>
                   Auto Convert
                 </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap display="block">
-                  Markdown
+                <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ fontSize: "0.7rem" }}>
+                  Markdown → HTML
                 </Typography>
               </Box>
             </Stack>
           </Paper>
 
+          {/* New Note button */}
           <Paper
             onClick={() => navigate("/note/new")}
             sx={{
               flex: 1,
-              p: 2,
-              borderRadius: 4,
+              px: 1.5,
+              py: 1.25,
+              borderRadius: "16px",
               cursor: "pointer",
               bgcolor: "primary.main",
               color: "#FFFFFF",
-              boxShadow: "0 8px 24px rgba(11, 87, 208, 0.3)",
-              transition: "all 0.2s ease",
-              "&:active": { transform: "scale(0.98)" }
+              boxShadow: `0 6px 18px ${alpha(theme.palette.primary.main, 0.35)}`,
+              transition: "all 0.15s ease",
+              "&:active": { transform: "scale(0.97)", opacity: 0.9 }
             }}
           >
             <Stack direction="row" spacing={1.25} alignItems="center">
-              <Box 
-                sx={{ 
-                  p: 1, 
-                  borderRadius: 3, 
-                  bgcolor: "rgba(255,255,255,0.2)", 
+              <Box
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "10px",
+                  bgcolor: "rgba(255,255,255,0.2)",
                   color: "#FFFFFF",
                   display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   flexShrink: 0
                 }}
               >
-                <AddIcon fontSize="small" />
+                <AddIcon sx={{ fontSize: 18 }} />
               </Box>
-              <Box noWrap sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ fontSize: "0.85rem" }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ fontSize: "0.82rem", lineHeight: 1.3 }}>
                   New Note
                 </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.85 }} noWrap display="block">
-                  Create a new note
+                <Typography variant="caption" sx={{ opacity: 0.8 }} noWrap display="block" sx={{ fontSize: "0.7rem" }}>
+                  Create a note
                 </Typography>
               </Box>
             </Stack>
@@ -373,63 +386,48 @@ export const DashboardPage = () => {
       )}
 
       {/* Overview Statistics Section */}
-      <Box sx={{ mb: 4 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-          <Typography variant="h6" fontWeight={700}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
+          <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: "1rem", sm: "1.125rem" } }}>
             Overview
           </Typography>
-          <Button 
-            size="small" 
-            endIcon={<ChevronRightIcon fontSize="small" />} 
+          <Button
+            size="small"
+            endIcon={<ChevronRightIcon fontSize="small" />}
             onClick={() => navigate("/notes")}
-            sx={{ fontWeight: 600, color: "primary.main" }}
+            sx={{ fontWeight: 600, color: "primary.main", fontSize: "0.8rem" }}
           >
             View all
           </Button>
         </Stack>
 
         {isMobile ? (
-          /* Mobile Horizontal Scroll Carousel */
-          <Box 
-            sx={{ 
-              display: "flex", 
-              gap: 2, 
-              overflowX: "auto", 
-              mt: 1.5,
-              pb: 1,
-              pt: 0.5,
-              px: 0.5,
-              mx: -0.5,
-              scrollbarWidth: "none",
-              "&::-webkit-scrollbar": { display: "none" }
+          /* Mobile 2×2 Grid */
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 1.5,
             }}
           >
-            <Box sx={{ minWidth: 180, flex: "0 0 auto" }}>
-              {renderOverviewCard("Total Notes", notes.length, <NotesIcon fontSize="small" />, <BlueSparkline />, "primary.container", "primary.main")}
-            </Box>
-            <Box sx={{ minWidth: 180, flex: "0 0 auto" }}>
-              {renderOverviewCard("Pinned Notes", pinnedCount, <PinnedIcon fontSize="small" />, <PurpleSparkline />, "rgba(124, 58, 237, 0.1)", "#7C3AED")}
-            </Box>
-            <Box sx={{ minWidth: 180, flex: "0 0 auto" }}>
-              {renderOverviewCard("Favorites", favoriteCount, <FavoriteIcon fontSize="small" />, <RedSparkline />, "rgba(220, 38, 38, 0.1)", "#DC2626")}
-            </Box>
-            <Box sx={{ minWidth: 180, flex: "0 0 auto" }}>
-              {renderOverviewCard("Total Views", totalViews, <ViewIcon fontSize="small" />, <TealSparkline />, "rgba(13, 148, 136, 0.1)", "#0D9488")}
-            </Box>
+            {renderOverviewCard("Total Notes", notes.length, <NotesIcon fontSize="small" />, <BlueSparkline />, "primary.container", "primary.main")}
+            {renderOverviewCard("Pinned", pinnedCount, <PinnedIcon fontSize="small" />, <PurpleSparkline />, "rgba(124, 58, 237, 0.1)", "#7C3AED")}
+            {renderOverviewCard("Favorites", favoriteCount, <FavoriteIcon fontSize="small" />, <RedSparkline />, "rgba(220, 38, 38, 0.1)", "#DC2626")}
+            {renderOverviewCard("Total Views", totalViews, <ViewIcon fontSize="small" />, <TealSparkline />, "rgba(13, 148, 136, 0.1)", "#0D9488")}
           </Box>
         ) : (
           /* Desktop Responsive 4-Column Grid */
           <Grid container spacing={3} sx={{ width: "100%", mt: 0.5 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               {renderOverviewCard("Total Notes", notes.length, <NotesIcon fontSize="small" />, <BlueSparkline />, "primary.container", "primary.main")}
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               {renderOverviewCard("Pinned Notes", pinnedCount, <PinnedIcon fontSize="small" />, <PurpleSparkline />, "rgba(124, 58, 237, 0.1)", "#7C3AED")}
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               {renderOverviewCard("Favorites", favoriteCount, <FavoriteIcon fontSize="small" />, <RedSparkline />, "rgba(220, 38, 38, 0.1)", "#DC2626")}
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               {renderOverviewCard("Total Views", totalViews, <ViewIcon fontSize="small" />, <TealSparkline />, "rgba(13, 148, 136, 0.1)", "#0D9488")}
             </Grid>
           </Grid>
@@ -437,43 +435,56 @@ export const DashboardPage = () => {
       </Box>
 
       {/* Recent Notes Section Header & Controls */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h6" fontWeight={700}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: { xs: 1.5, sm: 2 } }}>
+        <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: "1rem", sm: "1.125rem" } }}>
           Recent Notes
         </Typography>
-        <Button 
-          size="small" 
-          endIcon={<ChevronRightIcon fontSize="small" />} 
+        <Button
+          size="small"
+          endIcon={<ChevronRightIcon fontSize="small" />}
           onClick={() => navigate("/notes")}
-          sx={{ fontWeight: 600, color: "primary.main" }}
+          sx={{ fontWeight: 600, color: "primary.main", fontSize: "0.8rem" }}
         >
           View all
         </Button>
       </Stack>
 
       {/* Filter Chips & View Controls */}
-      <Box sx={{ mb: 3, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
-        <Stack direction="row" spacing={1}>
+      <Box sx={{ mb: { xs: 2, sm: 3 }, display: "flex", flexWrap: "nowrap", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{
+            overflowX: "auto",
+            flexShrink: 1,
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+            py: 0.25
+          }}
+        >
           <Chip
-            label="All Notes"
+            label="All"
             clickable
+            size="small"
             color={filterType === "all" ? "primary" : "default"}
             onClick={() => setFilterType("all")}
-            sx={{ fontWeight: 600, borderRadius: 2 }}
+            sx={{ fontWeight: 600, borderRadius: "8px", height: 30, fontSize: "0.78rem" }}
           />
           <Chip
             label="Pinned"
             clickable
+            size="small"
             color={filterType === "pinned" ? "primary" : "default"}
             onClick={() => setFilterType("pinned")}
-            sx={{ fontWeight: 600, borderRadius: 2 }}
+            sx={{ fontWeight: 600, borderRadius: "8px", height: 30, fontSize: "0.78rem" }}
           />
           <Chip
             label="Favorites"
             clickable
+            size="small"
             color={filterType === "favorites" ? "primary" : "default"}
             onClick={() => setFilterType("favorites")}
-            sx={{ fontWeight: 600, borderRadius: 2 }}
+            sx={{ fontWeight: 600, borderRadius: "8px", height: 30, fontSize: "0.78rem" }}
           />
         </Stack>
 
@@ -512,7 +523,7 @@ export const DashboardPage = () => {
       {loading ? (
         <Grid container spacing={3}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Grid item xs={12} sm={6} md={4} key={i}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
               <Skeleton variant="rectangular" height={220} sx={{ borderRadius: 4 }} />
             </Grid>
           ))}
@@ -532,12 +543,12 @@ export const DashboardPage = () => {
         </Card>
       ) : isMobile ? (
         /* Mobile Compact Single-Column Note List */
-        <Stack spacing={1.5}>
+        <Stack spacing={1}>
           {filteredNotes.map((note) => {
             const meta = extractNoteMetadata(note.content || "");
-            const excerpt = meta.excerpt || stripHtmlTags(note.content || "").slice(0, 75);
-            const dateStr = note.updatedAt?.toDate 
-              ? format(note.updatedAt.toDate(), "MMM d, yyyy · h:mm a")
+            const excerpt = meta.excerpt || stripHtmlTags(note.content || "").slice(0, 80);
+            const dateStr = note.updatedAt?.toDate
+              ? format(note.updatedAt.toDate(), "MMM d · h:mm a")
               : "Just now";
 
             return (
@@ -546,46 +557,64 @@ export const DashboardPage = () => {
                 variant="outlined"
                 onClick={() => navigate(`/note/${note.id}`)}
                 sx={{
-                  p: 2.5,
-                  borderRadius: 4,
+                  px: 1.5,
+                  py: 1.25,
+                  borderRadius: "14px",
                   cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  "&:active": { bgcolor: "action.hover" }
+                  transition: "all 0.12s ease",
+                  "&:active": { bgcolor: "action.hover", transform: "scale(0.99)" }
                 }}
               >
-                <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-                  <Stack direction="row" spacing={1.75} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
-                    <Box 
-                      sx={{ 
-                        p: 1.25, 
-                        borderRadius: 3, 
-                        bgcolor: "primary.container", 
+                <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "10px",
+                        bgcolor: "primary.container",
                         color: "primary.main",
                         display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         flexShrink: 0
                       }}
                     >
-                      <DocIcon fontSize="small" />
+                      <DocIcon sx={{ fontSize: 17 }} />
                     </Box>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography variant="subtitle2" fontWeight={700} noWrap>
+                      <Typography
+                        fontWeight={700}
+                        noWrap
+                        sx={{ fontSize: "0.875rem", lineHeight: 1.3 }}
+                      >
                         {note.title || "Untitled Note"}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ mt: 0.25 }}>
-                        {excerpt || "No additional text content"}
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        noWrap
+                        display="block"
+                        sx={{ fontSize: "0.74rem", lineHeight: 1.4 }}
+                      >
+                        {excerpt || "No content preview"}
                       </Typography>
-                      <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem", mt: 0.5, display: "block" }}>
+                      <Typography
+                        variant="caption"
+                        color="text.disabled"
+                        sx={{ fontSize: "0.68rem", display: "block", mt: 0.25 }}
+                      >
                         {dateStr}
                       </Typography>
                     </Box>
                   </Stack>
 
-                  <IconButton 
-                    size="small" 
-                    onClick={(e) => handleMenuOpen(e, note.id)} 
-                    sx={{ color: "text.secondary", flexShrink: 0 }}
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, note.id)}
+                    sx={{ color: "text.secondary", flexShrink: 0, p: 0.75 }}
                   >
-                    <MoreVertIcon fontSize="small" />
+                    <MoreVertIcon sx={{ fontSize: 18 }} />
                   </IconButton>
                 </Stack>
               </Paper>

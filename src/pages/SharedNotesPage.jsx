@@ -69,7 +69,7 @@ export const SharedNotesPage = () => {
       {loading ? (
         <Grid container spacing={3}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Grid item xs={12} sm={6} md={4} key={i}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
               <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 3 }} />
             </Grid>
           ))}
@@ -87,7 +87,7 @@ export const SharedNotesPage = () => {
       ) : (
         <Grid container spacing={3}>
           {filteredNotes.map((note) => (
-            <Grid item xs={12} sm={6} md={4} key={note.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={note.id}>
               <NoteCard
                 note={note}
                 onClick={() => navigate(`/note/${note.id}`)}

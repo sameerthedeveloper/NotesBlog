@@ -54,7 +54,8 @@ import {
   ShareOutlined as ShareIcon,
   AdminPanelSettingsOutlined as AdminIcon,
   BookmarkOutlined as BookmarkIcon,
-  AutoAwesome as SparklesIcon
+  AutoAwesome as SparklesIcon,
+  MonetizationOnOutlined as MonetizationIcon
 } from "@mui/icons-material";
 import PromptBuilderModal from "../components/PromptBuilderModal";
 import { useAuth } from "../context/AuthContext";
@@ -104,6 +105,7 @@ const AppLayout = () => {
     { text: "Discover", icon: <ExploreIcon />, path: "/discover" },
     { text: "Shared Notes", icon: <ShareIcon />, path: "/shared" },
     { text: "Bookmarks", icon: <BookmarkIcon />, path: "/bookmarks" },
+    { text: "Monetization", icon: <MonetizationIcon />, path: "/monetization" },
     { text: "Search", icon: <SearchIcon />, path: "/search" },
     { text: "Notifications", icon: <NotificationsIcon />, path: "/notifications" },
     { text: "Profile", icon: <PersonIcon />, path: "/profile" },
@@ -214,14 +216,30 @@ const AppLayout = () => {
             </Box>
           ) : (
             <>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <IconButton color="inherit" onClick={handleDrawerToggle} edge="start" sx={{ mr: 0.5, borderRadius: 2 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <IconButton
+                  color="inherit"
+                  onClick={handleDrawerToggle}
+                  edge="start"
+                  sx={{ mr: 0, borderRadius: 2, minWidth: 44, minHeight: 44 }}
+                >
                   <MenuIcon />
                 </IconButton>
                 {isMobile ? (
-                  <Stack direction="row" spacing={1} alignItems="center" onClick={() => navigate("/")} sx={{ cursor: "pointer" }}>
-                    <Box component="img" src="/logo.svg" alt="OpenNotes" sx={{ height: 32, width: 32, borderRadius: 1.5 }} />
-                    <Typography variant="h6" fontWeight={800} letterSpacing="-0.5px" color="text.primary" noWrap>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    onClick={() => navigate("/")}
+                    sx={{ cursor: "pointer", flexShrink: 0 }}
+                  >
+                    <Box component="img" src="/logo.svg" alt="OpenNotes" sx={{ height: 30, width: 30, borderRadius: 1.5, flexShrink: 0 }} />
+                    <Typography
+                      fontWeight={800}
+                      letterSpacing="-0.5px"
+                      color="text.primary"
+                      sx={{ fontSize: "1rem", whiteSpace: "nowrap", overflow: "visible" }}
+                    >
                       OpenNotes
                     </Typography>
                   </Stack>
@@ -285,21 +303,34 @@ const AppLayout = () => {
 
               <Box sx={{ flexGrow: 1 }} />
 
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction="row" spacing={0.5} alignItems="center">
                 {isMobile && (
-                   <IconButton color="inherit" size="small" onClick={() => setMobileSearchOpen(true)}>
-                     <SearchIcon />
-                   </IconButton>
+                  <IconButton
+                    color="inherit"
+                    size="medium"
+                    onClick={() => setMobileSearchOpen(true)}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <SearchIcon />
+                  </IconButton>
                 )}
                 
                 <Tooltip title="AI Prompt Builder">
-                  <IconButton color="primary" onClick={() => setPromptModalOpen(true)}>
+                  <IconButton
+                    color="primary"
+                    onClick={() => setPromptModalOpen(true)}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
                     <SparklesIcon />
                   </IconButton>
                 </Tooltip>
 
                 <Tooltip title="Notifications">
-                  <IconButton color="inherit" onClick={() => navigate("/notifications")}>
+                  <IconButton
+                    color="inherit"
+                    onClick={() => navigate("/notifications")}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
                     <Badge badgeContent={2} color="error">
                       <NotificationsIcon />
                     </Badge>
@@ -402,7 +433,7 @@ const AppLayout = () => {
           overflowX: "hidden"
         }}
       >
-        <Container maxWidth="xl" disableGutters sx={{ maxWidth: 1440, mx: "auto", width: "100%" }}>
+        <Container maxWidth="xl" disableGutters sx={{ maxWidth: 1440, mx: "auto", width: "100%", px: { xs: 0, sm: 0 } }}>
           {/* Breadcrumb Navigation (Hidden on Home Page & Mobile View) */}
         {!isMobile && location.pathname !== "/" && (
           <Box sx={{ mb: 2 }}>
@@ -434,32 +465,31 @@ const AppLayout = () => {
 
       {/* Mobile Bottom Navigation Bar */}
       {isMobile && (
-        <Paper 
-          sx={{ 
-            position: "fixed", 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
+        <Paper
+          sx={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
             zIndex: 1200,
-            borderTop: 1,
+            borderTop: "1px solid",
             borderColor: "divider",
             borderRadius: 0,
-            pb: "safe-area-inset-bottom"
-          }} 
-          elevation={8}
+          }}
+          elevation={4}
         >
           <BottomNavigation
             showLabels
             value={
               location.pathname === "/" ? 0 :
-              location.pathname === "/shared" ? 1 :
+              location.pathname === "/discover" ? 1 :
               location.pathname === "/note/new" ? 2 :
               location.pathname === "/bookmarks" ? 3 :
               location.pathname === "/profile" ? 4 : 0
             }
             onChange={(event, newValue) => {
               if (newValue === 0) navigate("/");
-              else if (newValue === 1) navigate("/shared");
+              else if (newValue === 1) navigate("/discover");
               else if (newValue === 2) navigate("/note/new");
               else if (newValue === 3) navigate("/bookmarks");
               else if (newValue === 4) navigate("/profile");
@@ -467,38 +497,49 @@ const AppLayout = () => {
             sx={{
               height: 64,
               bgcolor: "background.paper",
+              paddingBottom: "env(safe-area-inset-bottom)",
               "& .MuiBottomNavigationAction-root": {
-                minWidth: "auto",
-                px: 1
-              }
+                minWidth: 0,
+                flex: 1,
+                px: 0.5,
+                py: 0.75,
+                gap: 0.25,
+              },
+              "& .MuiBottomNavigationAction-label": {
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                opacity: 0.7,
+                "&.Mui-selected": { fontSize: "0.65rem", opacity: 1 },
+              },
             }}
           >
-            <BottomNavigationAction label="Home" icon={<DashboardIcon />} />
-            <BottomNavigationAction label="Discover" icon={<ExploreIcon />} />
-            <BottomNavigationAction 
-              label="Create" 
+            <BottomNavigationAction label="Home" icon={<DashboardIcon sx={{ fontSize: 22 }} />} />
+            <BottomNavigationAction label="Discover" icon={<ExploreIcon sx={{ fontSize: 22 }} />} />
+            <BottomNavigationAction
+              label="Create"
               icon={
-                <Box 
-                  sx={{ 
-                    width: 40, 
-                    height: 40, 
-                    borderRadius: "50%", 
-                    bgcolor: "primary.main", 
-                    color: "#ffffff", 
-                    display: "flex", 
-                    alignItems: "center", 
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 4px 12px rgba(11,87,208,0.35)",
+                    boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}`,
+                    mt: -1.5,
                     transition: "transform 0.15s ease",
-                    "&:active": { transform: "scale(0.95)" }
+                    "&:active": { transform: "scale(0.93)" }
                   }}
                 >
-                  <AddIcon />
+                  <AddIcon sx={{ fontSize: 22 }} />
                 </Box>
-              } 
+              }
             />
-            <BottomNavigationAction label="Bookmarks" icon={<BookmarkIcon />} />
-            <BottomNavigationAction label="Profile" icon={<PersonIcon />} />
+            <BottomNavigationAction label="Bookmarks" icon={<BookmarkIcon sx={{ fontSize: 22 }} />} />
+            <BottomNavigationAction label="Profile" icon={<PersonIcon sx={{ fontSize: 22 }} />} />
           </BottomNavigation>
         </Paper>
       )}

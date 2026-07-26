@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { AppThemeProvider } from "./context/ThemeContext";
+import { MonetizationProvider } from "./context/MonetizationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 import { Box, CircularProgress, Skeleton, Container } from "@mui/material";
@@ -25,6 +26,7 @@ const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SharedNotesPage = lazy(() => import("./pages/SharedNotesPage"));
 const BookmarksPage = lazy(() => import("./pages/BookmarksPage"));
 const AdminPanelPage = lazy(() => import("./pages/AdminPanelPage"));
+const MonetizationPage = lazy(() => import("./pages/MonetizationPage"));
 
 const LoadingFallback = () => (
   <Box 
@@ -56,83 +58,90 @@ function App() {
   return (
     <AppThemeProvider>
       <AuthProvider>
-        <Router>
-          <Toaster position="top-right" />
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              {/* Auth Routes */}
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-              </Route>
+        <MonetizationProvider>
+          <Router>
+            <Toaster position="top-right" />
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Auth Routes */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                </Route>
 
-              {/* Public Note Viewer Route */}
-              <Route path="/note/:id" element={<PublicNotePage />} />
+                {/* Public Note Viewer Route */}
+                <Route path="/note/:id" element={<PublicNotePage />} />
 
-              {/* Protected Workspace Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<AppLayout />}>
-                  <Route 
-                    path="/" 
-                    element={
+                {/* Protected Workspace Routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<AppLayout />}>
+                    <Route 
+                      path="/" 
+                      element={
+                        <Suspense fallback={<PageSkeleton />}>
+                          <DashboardPage />
+                        </Suspense>
+                      } 
+                    />
+                    <Route path="/dashboard" element={
                       <Suspense fallback={<PageSkeleton />}>
                         <DashboardPage />
                       </Suspense>
-                    } 
-                  />
-                  <Route path="/dashboard" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <DashboardPage />
-                    </Suspense>
-                  } />
-                  <Route path="/notes" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <NotesPage />
-                    </Suspense>
-                  } />
-                  <Route path="/discover" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <DiscoverPage />
-                    </Suspense>
-                  } />
-                  <Route path="/shared" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <SharedNotesPage />
-                    </Suspense>
-                  } />
-                  <Route path="/bookmarks" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <BookmarksPage />
-                    </Suspense>
-                  } />
-                  <Route path="/search" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <SearchPage />
-                    </Suspense>
-                  } />
-                  <Route path="/notifications" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <NotificationsPage />
-                    </Suspense>
-                  } />
-                  <Route path="/settings" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <SettingsPage />
-                    </Suspense>
-                  } />
-                  <Route path="/admin" element={
-                    <Suspense fallback={<PageSkeleton />}>
-                      <AdminPanelPage />
-                    </Suspense>
-                  } />
-                  <Route path="/note/new" element={<NoteEditorPage />} />
-                  <Route path="/note/:id/edit" element={<NoteEditorPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
+                    } />
+                    <Route path="/notes" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <NotesPage />
+                      </Suspense>
+                    } />
+                    <Route path="/discover" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <DiscoverPage />
+                      </Suspense>
+                    } />
+                    <Route path="/shared" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SharedNotesPage />
+                      </Suspense>
+                    } />
+                    <Route path="/bookmarks" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <BookmarksPage />
+                      </Suspense>
+                    } />
+                    <Route path="/monetization" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <MonetizationPage />
+                      </Suspense>
+                    } />
+                    <Route path="/search" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SearchPage />
+                      </Suspense>
+                    } />
+                    <Route path="/notifications" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <NotificationsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/settings" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <SettingsPage />
+                      </Suspense>
+                    } />
+                    <Route path="/admin" element={
+                      <Suspense fallback={<PageSkeleton />}>
+                        <AdminPanelPage />
+                      </Suspense>
+                    } />
+                    <Route path="/note/new" element={<NoteEditorPage />} />
+                    <Route path="/note/:id/edit" element={<NoteEditorPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                  </Route>
                 </Route>
-              </Route>
-            </Routes>
-          </Suspense>
-        </Router>
+              </Routes>
+            </Suspense>
+          </Router>
+        </MonetizationProvider>
       </AuthProvider>
     </AppThemeProvider>
   );

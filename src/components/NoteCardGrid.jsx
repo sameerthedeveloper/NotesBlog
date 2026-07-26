@@ -20,7 +20,7 @@ export const NoteCardGrid = ({
     return (
       <Grid container spacing={3} sx={{ width: "100%", mt: 0.5 }}>
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={i} sx={{ display: "flex" }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i} sx={{ display: "flex" }}>
             <Skeleton variant="rectangular" height={240} sx={{ borderRadius: 4, width: "100%" }} />
           </Grid>
         ))}
@@ -61,12 +61,13 @@ export const NoteCardGrid = ({
   return (
     <Grid container spacing={3} sx={{ width: "100%", mt: 0.5, mb: 2 }}>
       {notes.map((note) => (
-        <Grid 
-          item 
-          xs={12} 
-          sm={viewMode === "grid" ? 6 : 12} 
-          md={viewMode === "grid" ? 4 : 12} 
-          lg={viewMode === "grid" ? 3 : 12} 
+        <Grid
+          size={{
+            xs: 12,
+            sm: viewMode === "grid" ? 6 : 12,
+            md: viewMode === "grid" ? 4 : 12,
+            lg: viewMode === "grid" ? 3 : 12,
+          }}
           key={note.id}
           sx={{ display: "flex", flexDirection: "column" }}
         >

@@ -28,6 +28,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import HtmlViewer from "../components/HtmlViewer";
 import ExportMenu from "../components/ExportMenu";
+import AdPlacement from "../features/monetization/components/AdPlacement";
 
 export const PublicNotePage = () => {
   const { id } = useParams();
@@ -186,8 +187,14 @@ export const PublicNotePage = () => {
               </Stack>
             )}
 
+            {/* Creator AdPlacement: Above Article */}
+            <AdPlacement placement="above_article" creatorUid={note.userId} />
+
             {/* Sanitized HTML Content */}
             <HtmlViewer content={note.content} />
+
+            {/* Creator AdPlacement: Below Article */}
+            <AdPlacement placement="below_article" creatorUid={note.userId} />
         </Box>
       </Stack>
 

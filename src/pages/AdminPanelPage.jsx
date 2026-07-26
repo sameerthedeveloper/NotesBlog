@@ -109,7 +109,7 @@ export const AdminPanelPage = () => {
 
       {/* System Metrics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Card variant="outlined" sx={{ borderRadius: 3, p: 1 }}>
             <CardContent>
               <Typography variant="body2" color="text.secondary" fontWeight={600}>
@@ -122,7 +122,7 @@ export const AdminPanelPage = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Card variant="outlined" sx={{ borderRadius: 3, p: 1 }}>
             <CardContent>
               <Typography variant="body2" color="text.secondary" fontWeight={600}>
@@ -135,7 +135,7 @@ export const AdminPanelPage = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Card variant="outlined" sx={{ borderRadius: 3, p: 1 }}>
             <CardContent>
               <Typography variant="body2" color="text.secondary" fontWeight={600}>
@@ -150,7 +150,7 @@ export const AdminPanelPage = () => {
       </Grid>
 
       {/* Notes Inventory Data Table */}
-      <Paper variant="outlined" sx={{ borderRadius: 4, overflow: "hidden", p: 2 }}>
+      <Paper variant="outlined" sx={{ borderRadius: 4, overflow: "hidden", p: 2, mb: 4 }}>
         <Typography variant="h6" fontWeight={700} mb={2} px={1}>
           Firestore Document Records
         </Typography>
@@ -189,6 +189,53 @@ export const AdminPanelPage = () => {
                   <TableCell>{n.viewCount || 0}</TableCell>
                 </TableRow>
               ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      {/* Creator Monetization Verification Requests */}
+      <Paper variant="outlined" sx={{ borderRadius: 4, overflow: "hidden", p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} px={1}>
+          <Typography variant="h6" fontWeight={700}>
+            Creator Monetization Verifications
+          </Typography>
+          <Chip label="Policy Engine Active" color="success" size="small" sx={{ fontWeight: 700 }} />
+        </Stack>
+
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Creator UID</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Provider</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Publisher ID</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell fontMonospace>usr_creator_891</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Google AdSense</TableCell>
+                <TableCell>pub-984021928419</TableCell>
+                <TableCell><Chip label="Pending Review" color="warning" size="small" sx={{ fontWeight: 700 }} /></TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={1}>
+                    <Button size="small" variant="contained" color="success" onClick={() => toast.success("Approved creator monetization!")}>Approve</Button>
+                    <Button size="small" variant="outlined" color="error" onClick={() => toast.error("Rejected application")}>Reject</Button>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell fontMonospace>usr_dev_402</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Carbon Ads</TableCell>
+                <TableCell>CWYIK53I</TableCell>
+                <TableCell><Chip label="Verified" color="success" size="small" sx={{ fontWeight: 700 }} /></TableCell>
+                <TableCell>
+                  <Button size="small" variant="outlined" color="warning" onClick={() => toast.success("Status updated")}>Suspend</Button>
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>
