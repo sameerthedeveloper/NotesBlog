@@ -125,30 +125,16 @@ export const updatePlacements = async (uid, placements, slotIds) => {
  * Fetch creator ad analytics / earnings metrics
  */
 export const getCreatorAnalytics = async () => {
-  // Returns mock structured analytics ready for charts & metrics
   return {
-    estimatedRevenue: "$142.80",
-    todayEarnings: "$12.45",
-    monthlyEarnings: "$384.50",
-    impressions: 48290,
-    clicks: 1420,
-    ctr: "2.94%",
-    rpm: "$2.95",
-    chartData: [
-      { date: "Mon", revenue: 14.2, impressions: 4200, clicks: 120 },
-      { date: "Tue", revenue: 18.5, impressions: 5100, clicks: 145 },
-      { date: "Wed", revenue: 12.1, impressions: 3800, clicks: 98 },
-      { date: "Thu", revenue: 22.4, impressions: 6400, clicks: 185 },
-      { date: "Fri", revenue: 19.8, impressions: 5900, clicks: 160 },
-      { date: "Sat", revenue: 25.6, impressions: 7200, clicks: 210 },
-      { date: "Sun", revenue: 30.2, impressions: 8400, clicks: 242 },
-    ],
-    topNotes: [
-      { title: "Complete Guide to TipTap & Rich HTML Formatting", views: "12.4k", revenue: "$48.20" },
-      { title: "Building Scalable SaaS Features in React 19", views: "9.1k", revenue: "$36.50" },
-      { title: "Modern Design Systems with Material Design 3", views: "6.8k", revenue: "$24.10" },
-      { title: "Firebase Firestore Performance Optimization", views: "5.2k", revenue: "$18.40" },
-    ],
+    estimatedRevenue: "$0.00",
+    todayEarnings: "$0.00",
+    monthlyEarnings: "$0.00",
+    impressions: 0,
+    clicks: 0,
+    ctr: "0.00%",
+    rpm: "$0.00",
+    chartData: [],
+    topNotes: [],
   };
 };
 

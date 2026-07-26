@@ -28,11 +28,13 @@ import {
 import { db } from "../firebase/config";
 import { collection, getDocs } from "firebase/firestore";
 import { runNotesMigration } from "../utils/migration";
+import { getAllVerificationsAdmin, updateVerificationStatusAdmin } from "../features/monetization/services/monetizationService";
 import toast from "react-hot-toast";
 
 export const AdminPanelPage = () => {
   const [stats, setStats] = useState({ totalNotes: 0, publicNotes: 0, htmlMigrated: 0 });
   const [notesList, setNotesList] = useState([]);
+  const [verificationsList, setVerificationsList] = useState([]);
   const [migrating, setMigrating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, msg: "" });
 
@@ -47,8 +49,21 @@ export const AdminPanelPage = () => {
       const htmlMigrated = docs.filter((d) => d.isMigratedToHtml || /^<[a-z1-6][\s\S]*>/i.test(d.content?.trim() || "")).length;
 
       setStats({ totalNotes, publicNotes, htmlMigrated });
+
+      const verifs = await getAllVerificationsAdmin();
+      setVerificationsList(verifs);
     } catch {
       // Ignored
+    }
+  };
+
+  const handleUpdateStatus = async (uid, providerId, status) => {
+    try {
+      await updateVerificationStatusAdmin(uid, providerId, status);
+      toast.success(`Verification status updated to ${status}!`);
+      await fetchAdminStats();
+    } catch {
+      toast.error("Failed to update verification status.");
     }
   };
 
@@ -215,27 +230,35 @@ export const AdminPanelPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              <TableRow>
-                <TableCell fontMonospace>usr_creator_891</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Google AdSense</TableCell>
-                <TableCell>pub-984021928419</TableCell>
-                <TableCell><Chip label="Pending Review" color="warning" size="small" sx={{ fontWeight: 700 }} /></TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Button size="small" variant="contained" color="success" onClick={() => toast.success("Approved creator monetization!")}>Approve</Button>
-                    <Button size="small" variant="outlined" color="error" onClick={() => toast.error("Rejected application")}>Reject</Button>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell fontMonospace>usr_dev_402</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Carbon Ads</TableCell>
-                <TableCell>CWYIK53I</TableCell>
-                <TableCell><Chip label="Verified" color="success" size="small" sx={{ fontWeight: 700 }} /></TableCell>
-                <TableCell>
-                  <Button size="small" variant="outlined" color="warning" onClick={() => toast.success("Status updated")}>Suspend</Button>
-                </TableCell>
-              </TableRow>
+              {verificationsList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                    No creator monetization verification requests pending.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                verificationsList.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell sx={{ fontFamily: "monospace" }}>{row.uid}</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{row.providerId}</TableCell>
+                    <TableCell>{row.publisherId}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={row.status}
+                        color={row.status === "verified" ? "success" : row.status === "pending" ? "warning" : "error"}
+                        size="small"
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button size="small" variant="contained" color="success" onClick={() => handleUpdateStatus(row.uid, row.providerId, "verified")}>Approve</Button>
+                        <Button size="small" variant="outlined" color="error" onClick={() => handleUpdateStatus(row.uid, row.providerId, "rejected")}>Reject</Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

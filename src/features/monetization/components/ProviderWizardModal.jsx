@@ -46,7 +46,7 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
   const { submitProviderConnection } = useMonetization();
 
   const [activeStep, setActiveStep] = useState(0);
-  const [selectedProviderId, setSelectedProviderId] = useState(initialProviderId || "google_adsense");
+  const [selectedProviderId, setSelectedProviderId] = useState(initialProviderId || null);
   const [formData, setFormData] = useState({
     publisherId: "",
     publisherName: "",
@@ -55,7 +55,7 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
   const [validationErrors, setValidationErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedProvider = getProviderById(selectedProviderId) || getAllProviders()[0];
+  const selectedProvider = getProviderById(selectedProviderId) || null;
 
   const handleNext = async () => {
     if (activeStep === 0 && !selectedProviderId) {
@@ -198,7 +198,7 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
         )}
 
         {/* Step 2: Read Requirements */}
-        {activeStep === 1 && (
+        {activeStep === 1 && selectedProvider && (
           <Stack spacing={2.5}>
             <Alert severity="info" sx={{ borderRadius: 3 }}>
               You are connecting <strong>{selectedProvider.name}</strong> to your OpenNotes creator profile.
@@ -224,7 +224,7 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
         )}
 
         {/* Step 3: Enter Publisher Details */}
-        {activeStep === 2 && (
+        {activeStep === 2 && selectedProvider && (
           <Stack spacing={2.5}>
             <Typography variant="subtitle1" fontWeight={700}>
               Enter {selectedProvider.name} Credentials

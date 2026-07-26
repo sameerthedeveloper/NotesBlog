@@ -262,20 +262,34 @@ export const MonetizationPage = () => {
         </Grid>
 
         {/* Status Alert Banner */}
-        <Paper variant="outlined" sx={{ p: 3, mt: 3, borderRadius: 3 }}>
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 3,
+            mt: 3,
+            borderRadius: 3,
+            borderColor: activeProvider ? "primary.main" : "divider",
+            bgcolor: activeProvider ? alpha(theme.palette.primary.main, 0.04) : "background.paper",
+          }}
+        >
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap">
             <Box>
               <Typography variant="h6" fontWeight={800}>
-                Active Provider: {activeProvider ? activeProvider.name : "None Connected"}
+                {activeProvider ? `Active Provider: ${activeProvider.name}` : "No Ad Provider Connected"}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 {activeProvider
                   ? `Publisher ID: ${monetizationState?.publisherId}`
-                  : "Connect an ad network to start monetizing your public notes."}
+                  : "Connect an advertising provider to start monetizing your public notes."}
               </Typography>
             </Box>
-            <Button variant="outlined" onClick={() => setWizardOpen(true)} sx={{ borderRadius: 2.5, fontWeight: 700 }}>
-              {activeProvider ? "Change Provider" : "Connect Provider"}
+            <Button
+              variant={activeProvider ? "outlined" : "contained"}
+              startIcon={<AddIcon />}
+              onClick={() => setWizardOpen(true)}
+              sx={{ borderRadius: 2.5, fontWeight: 700 }}
+            >
+              {activeProvider ? "Change Provider" : "Connect Ad Provider"}
             </Button>
           </Stack>
         </Paper>
@@ -285,27 +299,33 @@ export const MonetizationPage = () => {
           <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
             Top Revenue Performing Notes
           </Typography>
-          <Stack spacing={1.5}>
-            {analytics?.topNotes?.map((note, i) => (
-              <Stack
-                key={i}
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  bgcolor: isDark ? alpha("#fff", 0.03) : alpha("#000", 0.02),
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={700}>{note.title}</Typography>
-                  <Typography variant="caption" color="text.secondary">{note.views} views</Typography>
-                </Box>
-                <Chip label={note.revenue} color="success" size="small" sx={{ fontWeight: 800 }} />
-              </Stack>
-            ))}
-          </Stack>
+          {!analytics?.topNotes || analytics.topNotes.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+              No ad revenue recorded yet. Connect an ad provider and publish notes to view performance.
+            </Typography>
+          ) : (
+            <Stack spacing={1.5}>
+              {analytics.topNotes.map((note, i) => (
+                <Stack
+                  key={i}
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: isDark ? alpha("#fff", 0.03) : alpha("#000", 0.02),
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>{note.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">{note.views} views</Typography>
+                  </Box>
+                  <Chip label={note.revenue} color="success" size="small" sx={{ fontWeight: 800 }} />
+                </Stack>
+              ))}
+            </Stack>
+          )}
         </Paper>
       </TabPanel>
 
@@ -436,9 +456,26 @@ export const MonetizationPage = () => {
 
           {loadingAnalytics ? (
             <LinearProgress sx={{ borderRadius: 2 }} />
+          ) : !analytics?.chartData || analytics.chartData.length === 0 ? (
+            <Paper variant="outlined" sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+                No Traffic or Revenue Analytics Recorded
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Connect an ad provider and enable ad placements to begin tracking impression and earnings analytics.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setWizardOpen(true)}
+                sx={{ borderRadius: 2.5, fontWeight: 700 }}
+              >
+                Connect Ad Provider
+              </Button>
+            </Paper>
           ) : (
             <Grid container spacing={2}>
-              {analytics?.chartData?.map((item, idx) => (
+              {analytics.chartData.map((item, idx) => (
                 <Grid size={{ xs: 12, sm: 6, md: 3 }} key={idx}>
                   <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, textAlign: "center" }}>
                     <Typography variant="caption" color="text.secondary" fontWeight={700}>{item.date}</Typography>
