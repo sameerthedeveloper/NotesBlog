@@ -376,7 +376,7 @@ export const DashboardPage = () => {
                 <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ fontSize: "0.82rem", lineHeight: 1.3 }}>
                   New Note
                 </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }} noWrap display="block" sx={{ fontSize: "0.7rem" }}>
+                <Typography variant="caption" sx={{ opacity: 0.8, fontSize: "0.7rem" }} noWrap display="block">
                   Create a note
                 </Typography>
               </Box>
