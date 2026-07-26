@@ -19,13 +19,21 @@ import {
   Brightness4 as DarkModeIcon,
   Security as SecurityIcon,
   CloudDone as CloudIcon,
-  Storage as StorageIcon
+  Storage as StorageIcon,
+  HelpOutline as HelpIcon,
+  PlayCircleOutline as ReplayIcon,
 } from "@mui/icons-material";
 import { useAppTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 export const SettingsPage = () => {
   const { mode, toggleColorMode } = useAppTheme();
+  const { setOnboardingOpen } = useAuth();
+
+  const handleReplayOnboarding = () => {
+    setOnboardingOpen(true);
+  };
 
   return (
     <Box sx={{ maxWidth: 800, mx: "auto", width: "100%" }}>
@@ -99,6 +107,28 @@ export const SettingsPage = () => {
             sx={{ borderRadius: 3, fontWeight: 600, width: "fit-content" }}
           >
             Clear Offline Cache
+          </Button>
+        </Paper>
+
+        {/* Help & Onboarding */}
+        <Paper variant="outlined" sx={{ p: 4, borderRadius: 4 }}>
+          <Stack direction="row" spacing={2} alignItems="center" mb={1}>
+            <HelpIcon color="action" />
+            <Typography variant="h6" fontWeight={700}>
+              Help & Onboarding
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            Replay the guided onboarding tour to rediscover features, personalization options, and tips for getting the most out of OpenNotes.
+          </Typography>
+
+          <Button
+            variant="outlined"
+            startIcon={<ReplayIcon />}
+            onClick={handleReplayOnboarding}
+            sx={{ borderRadius: 3, fontWeight: 600, width: "fit-content" }}
+          >
+            Replay Onboarding Tour
           </Button>
         </Paper>
       </Stack>

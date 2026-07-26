@@ -41,6 +41,13 @@ export const getUserProfile = async (uid) => {
   return userDoc.exists() ? userDoc.data() : null;
 };
 
+export const updateOnboardingStatus = async (uid, hasCompleted) => {
+  await updateDoc(doc(db, USERS_COLLECTION, uid), {
+    hasCompletedOnboarding: hasCompleted,
+    updatedAt: serverTimestamp()
+  });
+};
+
 // --- Notes ---
 
 export const createNote = async (noteData) => {

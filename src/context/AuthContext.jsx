@@ -7,7 +7,7 @@ import {
   signInWithGoogle, 
   logOut 
 } from "../features/auth/services/authService";
-import { getUserProfile } from "../features/notes/services/notesService";
+import { getUserProfile, updateOnboardingStatus } from "../features/notes/services/notesService";
 
 import { isSuperAdmin } from "../config/adminConfig";
 
@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (user) => {
@@ -26,8 +27,16 @@ export const AuthProvider = ({ children }) => {
       if (user) {
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
+        // Auto-trigger onboarding for new users who haven't completed it
+        if (profile && profile.hasCompletedOnboarding === false) {
+          setOnboardingOpen(true);
+        } else if (profile && profile.hasCompletedOnboarding === undefined) {
+          // Legacy users: treat undefined as not completed
+          setOnboardingOpen(true);
+        }
       } else {
         setUserProfile(null);
+        setOnboardingOpen(false);
       }
       setLoading(false);
     });
@@ -51,6 +60,15 @@ export const AuthProvider = ({ children }) => {
     return logOut();
   };
 
+  const completeOnboarding = async () => {
+    if (currentUser) {
+      await updateOnboardingStatus(currentUser.uid, true);
+      // Update local profile state too
+      setUserProfile((prev) => prev ? { ...prev, hasCompletedOnboarding: true } : prev);
+    }
+    setOnboardingOpen(false);
+  };
+
   const isAdmin = isSuperAdmin(currentUser);
 
   const value = {
@@ -62,7 +80,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     loading,
     isAdmin,
-    isSuperAdmin: () => isSuperAdmin(currentUser)
+    isSuperAdmin: () => isSuperAdmin(currentUser),
+    onboardingOpen,
+    setOnboardingOpen,
+    completeOnboarding,
   };
 
   return (

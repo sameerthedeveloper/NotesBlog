@@ -58,6 +58,7 @@ import {
   MonetizationOnOutlined as MonetizationIcon
 } from "@mui/icons-material";
 import PromptBuilderModal from "../components/PromptBuilderModal";
+import OnboardingWizardModal from "../components/OnboardingWizardModal";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
 
@@ -551,6 +552,9 @@ const AppLayout = () => {
         open={promptModalOpen}
         onClose={() => setPromptModalOpen(false)}
       />
+
+      {/* First-Time User Onboarding Wizard */}
+      <OnboardingWizardModal />
     </Box>
   );
 };
