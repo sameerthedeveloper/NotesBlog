@@ -9,6 +9,8 @@ import {
 } from "../features/auth/services/authService";
 import { getUserProfile } from "../features/notes/services/notesService";
 
+import { isSuperAdmin } from "../config/adminConfig";
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -49,6 +51,8 @@ export const AuthProvider = ({ children }) => {
     return logOut();
   };
 
+  const isAdmin = isSuperAdmin(currentUser);
+
   const value = {
     currentUser,
     userProfile,
@@ -56,7 +60,9 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithGoogle,
     logout,
-    loading
+    loading,
+    isAdmin,
+    isSuperAdmin: () => isSuperAdmin(currentUser)
   };
 
   return (

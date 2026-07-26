@@ -61,6 +61,8 @@ import PromptBuilderModal from "../components/PromptBuilderModal";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
 
+import { isSuperAdmin } from "../config/adminConfig";
+
 const drawerWidth = 260;
 
 const AppLayout = () => {
@@ -110,7 +112,7 @@ const AppLayout = () => {
     { text: "Notifications", icon: <NotificationsIcon />, path: "/notifications" },
     { text: "Profile", icon: <PersonIcon />, path: "/profile" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
-    { text: "Admin Panel", icon: <AdminIcon />, path: "/admin" },
+    ...(isSuperAdmin(currentUser) ? [{ text: "Admin Panel", icon: <AdminIcon />, path: "/admin" }] : []),
   ];
 
   const handleSearchSubmit = (e) => {

@@ -29,16 +29,25 @@ import { db } from "../firebase/config";
 import { collection, getDocs } from "firebase/firestore";
 import { runNotesMigration } from "../utils/migration";
 import { getAllVerificationsAdmin, updateVerificationStatusAdmin } from "../features/monetization/services/monetizationService";
+import { useAuth } from "../context/AuthContext";
+import { isSuperAdmin } from "../config/adminConfig";
+import UnauthorizedPage from "./UnauthorizedPage";
 import toast from "react-hot-toast";
 
 export const AdminPanelPage = () => {
+  const { currentUser } = useAuth();
   const [stats, setStats] = useState({ totalNotes: 0, publicNotes: 0, htmlMigrated: 0 });
   const [notesList, setNotesList] = useState([]);
   const [verificationsList, setVerificationsList] = useState([]);
   const [migrating, setMigrating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, msg: "" });
 
+  if (!isSuperAdmin(currentUser)) {
+    return <UnauthorizedPage />;
+  }
+
   const fetchAdminStats = async () => {
+    if (!isSuperAdmin(currentUser)) return;
     try {
       const snap = await getDocs(collection(db, "notes"));
       const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));

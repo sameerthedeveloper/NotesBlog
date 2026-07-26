@@ -1,4 +1,5 @@
-import { db } from "../../../firebase/config";
+import { db, auth } from "../../../firebase/config";
+import { isSuperAdmin } from "../../../config/adminConfig";
 import {
   doc,
   getDoc,
@@ -142,6 +143,11 @@ export const getCreatorAnalytics = async () => {
  * Admin: Fetch all pending/all creator verification submissions
  */
 export const getAllVerificationsAdmin = async () => {
+  if (!isSuperAdmin(auth.currentUser)) {
+    console.error("Unauthorized access attempt to getAllVerificationsAdmin");
+    throw new Error("HTTP 403: Forbidden - Super Admin access required");
+  }
+
   try {
     const q = query(collection(db, "providerVerifications"));
     const snap = await getDocs(q);
@@ -156,6 +162,11 @@ export const getAllVerificationsAdmin = async () => {
  * Admin: Approve or Reject a creator verification request
  */
 export const updateVerificationStatusAdmin = async (uid, providerId, newStatus, notes = "") => {
+  if (!isSuperAdmin(auth.currentUser)) {
+    console.error("Unauthorized access attempt to updateVerificationStatusAdmin");
+    throw new Error("HTTP 403: Forbidden - Super Admin access required");
+  }
+
   try {
     const verifRef = doc(db, "providerVerifications", `${uid}_${providerId}`);
     await updateDoc(verifRef, {

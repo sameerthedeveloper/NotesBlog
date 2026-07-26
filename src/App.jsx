@@ -11,6 +11,9 @@ import { Box, CircularProgress, Skeleton, Container } from "@mui/material";
 const AppLayout = lazy(() => import("./layouts/AppLayout"));
 const AuthLayout = lazy(() => import("./layouts/AuthLayout"));
 
+import AdminRoute from "./components/AdminRoute";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+
 // Pages
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const NotesPage = lazy(() => import("./pages/NotesPage"));
@@ -128,11 +131,17 @@ function App() {
                         <SettingsPage />
                       </Suspense>
                     } />
-                    <Route path="/admin" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <AdminPanelPage />
-                      </Suspense>
-                    } />
+                    
+                    {/* Protected Admin Routes */}
+                    <Route element={<AdminRoute />}>
+                      <Route path="/admin" element={
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AdminPanelPage />
+                        </Suspense>
+                      } />
+                    </Route>
+
+                    <Route path="/unauthorized" element={<UnauthorizedPage />} />
                     <Route path="/note/new" element={<NoteEditorPage />} />
                     <Route path="/note/:id/edit" element={<NoteEditorPage />} />
                     <Route path="/profile" element={<ProfilePage />} />

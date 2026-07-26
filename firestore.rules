@@ -1,45 +1,68 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper: Validates Super Admin authentication identity from backend token
+    function isSuperAdmin() {
+      return request.auth != null &&
+             request.auth.token.email != null &&
+             request.auth.token.email.lower() == 'mohamedsameer.s.2007@gmail.com';
+    }
+
     // --- User Profiles ---
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if (request.auth != null && request.auth.uid == userId) || isSuperAdmin();
     }
     
     // --- Notes ---
     match /notes/{noteId} {
-      // Allow read if note is public OR user is author (or note doesn't exist yet)
-      allow read: if resource == null || (
+      // Allow read if super admin OR note is public OR user is author (or note doesn't exist yet)
+      allow read: if isSuperAdmin() || resource == null || (
           resource.data.visibility == 'public' || 
           (request.auth != null && request.auth.uid == resource.data.authorId)
       );
       
       allow create: if request.auth != null && 
-          request.resource.data.authorId == request.auth.uid;
+          (request.resource.data.authorId == request.auth.uid || isSuperAdmin());
           
-      // Allow update if author OR if it's a public note incrementing viewCount
-      allow update: if (request.auth != null && resource.data.authorId == request.auth.uid) ||
+      // Allow update if super admin OR author OR if it's a public note incrementing viewCount
+      allow update: if isSuperAdmin() ||
+          (request.auth != null && resource.data.authorId == request.auth.uid) ||
           (resource.data.visibility == 'public' && 
            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']));
            
-      allow delete: if request.auth != null && 
-          resource.data.authorId == request.auth.uid;
+      allow delete: if isSuperAdmin() || (
+          request.auth != null && resource.data.authorId == request.auth.uid
+      );
 
       // --- Views Subcollection ---
       match /views/{viewId} {
-        // Only the note's author can see the list of viewers
-        allow read: if request.auth != null && 
-            get(/databases/$(database)/documents/notes/$(noteId)).data.authorId == request.auth.uid;
+        allow read: if isSuperAdmin() || (request.auth != null && 
+            get(/databases/$(database)/documents/notes/$(noteId)).data.authorId == request.auth.uid);
         
-        // Anyone can record a view if the note is public
-        allow create, update: if get(/databases/$(database)/documents/notes/$(noteId)).data.visibility == 'public';
+        allow create, update: if isSuperAdmin() || 
+            get(/databases/$(database)/documents/notes/$(noteId)).data.visibility == 'public';
       }
     }
+
+    // --- Provider Verifications (Admin & Creator Access) ---
+    match /providerVerifications/{verifId} {
+      allow read, write: if isSuperAdmin();
+      // Allow individual creator to read/write their own verification submission document
+      allow read, create, update: if request.auth != null && 
+          verifId.startsWith(request.auth.uid + "_");
+    }
+
+    // --- Creator Monetization Settings ---
+    match /creatorMonetization/{uid} {
+      allow read: if request.auth != null;
+      allow write: if isSuperAdmin() || (request.auth != null && request.auth.uid == uid);
+    }
     
-    // --- Global Access Denied by Default ---
+    // --- Global Access Denied by Default (Super Admin Backup Exception) ---
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isSuperAdmin();
     }
   }
 }
