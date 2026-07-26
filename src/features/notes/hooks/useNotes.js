@@ -5,24 +5,19 @@ import { useAuth } from "../../../context/AuthContext";
 export const useNotes = (options = {}) => {
   const { currentUser } = useAuth();
   const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(Boolean(currentUser));
 
   useEffect(() => {
-    if (!currentUser) {
-      setNotes([]);
-      setLoading(false);
-      return;
-    }
+    if (!currentUser) return;
 
-    setLoading(true);
     const unsubscribe = subscribeUserNotes(currentUser.uid, options, (fetchedNotes) => {
       setNotes(fetchedNotes);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [currentUser, options.sortField, options.sortOrder, options.pageSize]);
+    // eslint-disable-next-deps
+  }, [currentUser, options]);
 
-  return { notes, loading, error };
+  return { notes, loading };
 };

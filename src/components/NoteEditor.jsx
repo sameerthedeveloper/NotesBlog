@@ -114,7 +114,7 @@ const MenuBar = ({ editor, onUploadPdf, isUploading }) => {
   );
 };
 
-const NoteEditor = ({ content, onUpdate }) => {
+const NoteEditor = ({ content, onUpdate, minHeight = "450px", hideBorder = false }) => {
   const theme = useTheme();
   const { currentUser } = useAuth();
   const [isUploading, setIsUploading] = React.useState(false);
@@ -166,7 +166,7 @@ const NoteEditor = ({ content, onUpdate }) => {
           }
         }).run();
         toast.success("PDF attached", { id: toastId });
-      } catch (error) {
+      } catch {
         toast.error("Failed to attach PDF", { id: toastId });
       } finally {
         setIsUploading(false);
@@ -178,22 +178,22 @@ const NoteEditor = ({ content, onUpdate }) => {
   return (
     <Box 
       sx={{ 
-        border: "1px solid", 
+        border: hideBorder ? "none" : "1px solid", 
         borderColor: "divider", 
         borderRadius: 1, // 16px Standardized MD3 Medium
-        minHeight: "450px",
+        minHeight: minHeight,
         display: "flex",
         flexDirection: "column",
-        backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : alpha(theme.palette.surface.variant, 0.05),
+        backgroundColor: hideBorder ? "transparent" : (theme.palette.mode === 'light' ? '#FFFFFF' : alpha(theme.palette.surface.variant, 0.05)),
         transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         "&:focus-within": {
-            borderColor: "primary.main",
+            borderColor: hideBorder ? "transparent" : "primary.main",
         },
         "& .ProseMirror": {
           flex: 1,
-          p: { xs: 2, sm: 4 },
+          p: { xs: 2, sm: hideBorder ? 2 : 4 },
           outline: "none",
-          minHeight: "400px",
+          minHeight: minHeight === "450px" ? "400px" : "100px",
           color: theme.palette.text.primary,
           lineHeight: 1.8,
           fontSize: "1rem",

@@ -9,17 +9,14 @@ import {
   deleteDoc, 
   doc, 
   getDoc, 
-  getDocs, 
   query, 
   where, 
   orderBy, 
   serverTimestamp, 
   onSnapshot,
   limit,
-  startAfter,
   increment,
-  setDoc,
-  collectionGroup
+  setDoc
 } from "firebase/firestore";
 import {
   ref,
@@ -47,45 +44,35 @@ export const getUserProfile = async (uid) => {
 // --- Notes ---
 
 export const createNote = async (noteData) => {
-  try {
-    const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
-      ...noteData,
-      isPinned: false,
-      isFavorite: false,
-      viewCount: 0,
-      versions: [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return docRef.id;
-  } catch (error) {
-    throw error;
-  }
+  const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
+    ...noteData,
+    isPinned: false,
+    isFavorite: false,
+    viewCount: 0,
+    versions: [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return docRef.id;
 };
 
 export const updateNote = async (noteId, noteData, options = {}) => {
-  try {
-    const docRef = doc(db, NOTES_COLLECTION, noteId);
-    
-    // Handle version history if requested
-    if (options.saveVersion && noteData.content) {
-      const noteSnap = await getDoc(docRef);
-      const oldContent = noteSnap.data()?.content;
-      if (oldContent && oldContent !== noteData.content) {
-        // Keep last 3 versions
-        const currentVersions = noteSnap.data()?.versions || [];
-        const newVersions = [oldContent, ...currentVersions].slice(0, 3);
-        noteData.versions = newVersions;
-      }
+  const docRef = doc(db, NOTES_COLLECTION, noteId);
+  
+  if (options.saveVersion && noteData.content) {
+    const noteSnap = await getDoc(docRef);
+    const oldContent = noteSnap.data()?.content;
+    if (oldContent && oldContent !== noteData.content) {
+      const currentVersions = noteSnap.data()?.versions || [];
+      const newVersions = [oldContent, ...currentVersions].slice(0, 3);
+      noteData.versions = newVersions;
     }
-
-    await updateDoc(docRef, {
-      ...noteData,
-      updatedAt: serverTimestamp()
-    });
-  } catch (error) {
-    throw error;
   }
+
+  await updateDoc(docRef, {
+    ...noteData,
+    updatedAt: serverTimestamp()
+  });
 };
 
 export const togglePin = async (noteId, isPinned) => {
@@ -101,12 +88,9 @@ export const toggleFavorite = async (noteId, isFavorite) => {
 export const incrementViewCount = async (noteId, viewerInfo = null) => {
   const docRef = doc(db, NOTES_COLLECTION, noteId);
   
-  // 1. Increment total count
   await updateDoc(docRef, { viewCount: increment(1) });
 
-  // 2. Log viewer details
   if (viewerInfo) {
-    // Use provide UID or generate a guest-session-based one for guests
     const viewerId = viewerInfo.uid || "guest_" + Date.now();
     const viewRef = doc(db, NOTES_COLLECTION, noteId, "views", viewerId);
     
@@ -117,13 +101,11 @@ export const incrementViewCount = async (noteId, viewerInfo = null) => {
       viewCount: increment(1)
     };
 
-    // Add optional fields if provided
     if (viewerInfo.email) viewData.email = viewerInfo.email;
     if (viewerInfo.photoURL) viewData.photoURL = viewerInfo.photoURL;
 
     await setDoc(viewRef, viewData, { merge: true });
   } else {
-    // Basic anonymous guest (fallback)
     const viewRef = doc(db, NOTES_COLLECTION, noteId, "views", "anon_" + Date.now());
     await setDoc(viewRef, {
       uid: "anonymous",
@@ -149,36 +131,27 @@ export const subscribeNoteViews = (noteId, callback) => {
   const q = query(viewsRef, orderBy("lastViewedAt", "desc"), limit(100));
   
   return onSnapshot(q, (snapshot) => {
-    const views = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+    const views = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
     }));
     callback(views);
   });
 };
 
 export const deleteNote = async (noteId) => {
-  try {
-    await deleteDoc(doc(db, NOTES_COLLECTION, noteId));
-  } catch (error) {
-    throw error;
-  }
+  await deleteDoc(doc(db, NOTES_COLLECTION, noteId));
 };
 
 export const getNoteById = async (noteId) => {
-  try {
-    const docRef = doc(db, NOTES_COLLECTION, noteId);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
-  } catch (error) {
-    throw error;
-  }
+  const docRef = doc(db, NOTES_COLLECTION, noteId);
+  const docSnap = await getDoc(docRef);
+  return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
 };
 
 export const subscribeUserNotes = (userId, options = {}, callback) => {
   const { sortField = "updatedAt", sortOrder = "desc", pageSize = 50 } = options;
   
-  // Sort by Pinned first, then by the requested field
   const q = query(
     collection(db, NOTES_COLLECTION),
     where("authorId", "==", userId),
@@ -188,14 +161,14 @@ export const subscribeUserNotes = (userId, options = {}, callback) => {
   );
   
   return onSnapshot(q, (snapshot) => {
-    const notes = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+    const notes = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
     }));
     callback(notes);
   }, (error) => {
     if (error.code === 'failed-precondition') {
-      console.error("Firestore Index Missing: This query requires a composite index. Create it here: https://console.firebase.google.com/v1/r/project/notespot-e1481/firestore/indexes");
+      console.error("Firestore Index Missing for user query");
     } else {
       console.error("Firestore Error:", error);
     }
@@ -210,31 +183,26 @@ export const subscribePublicNotes = (callback) => {
   );
   
   return onSnapshot(q, (snapshot) => {
-    const notes = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+    const notes = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
     }));
     callback(notes);
-  }, (error) => {
   });
 };
 
 export const uploadFileAttachment = async (userId, file) => {
   if (!userId || !file) throw new Error("Missing required parameters: userId or file.");
   
-  // Create a unique file name to avoid collisions
   const uniqueName = Date.now() + '-' + file.name;
   const storageRef = ref(storage, `users/${userId}/attachments/${uniqueName}`);
   
-  // Return a promise that resolves when the upload completes
   return new Promise((resolve, reject) => {
     const uploadTask = uploadBytesResumable(storageRef, file);
     
     uploadTask.on(
       'state_changed',
-      (snapshot) => {
-        // We could track progress here if needed
-      },
+      () => {},
       (error) => {
         console.error("Upload failed", error);
         reject(error);
@@ -255,4 +223,3 @@ export const uploadFileAttachment = async (userId, file) => {
     );
   });
 };
-

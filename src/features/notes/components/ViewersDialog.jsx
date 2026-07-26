@@ -31,7 +31,6 @@ const ViewersDialog = ({ open, onClose, noteId }) => {
 
   useEffect(() => {
     if (open && noteId) {
-      setLoading(true);
       const unsubscribe = subscribeNoteViews(noteId, (fetchedViewers) => {
         setViewers(fetchedViewers);
         setLoading(false);

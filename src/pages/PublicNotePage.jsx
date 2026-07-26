@@ -4,19 +4,17 @@ import {
   Box, 
   Typography, 
   Container, 
-  Paper, 
   CircularProgress, 
   Divider,
   Avatar,
   Stack,
   Button,
-  alpha,
-  useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
   TextField,
-  DialogActions
+  DialogActions,
+  Chip
 } from "@mui/material";
 import { 
   ArrowBack as BackIcon, 
@@ -27,14 +25,14 @@ import {
 import { subscribeNoteById, incrementViewCount } from "../features/notes/services/notesService";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
-import AdSense from "../components/AdSense";
 import { useAuth } from "../context/AuthContext";
+import HtmlViewer from "../components/HtmlViewer";
+import ExportMenu from "../components/ExportMenu";
 
-const PublicNotePage = () => {
+export const PublicNotePage = () => {
   const { id } = useParams();
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
-  const theme = useTheme();
 
   const { userProfile } = useAuth();
   const [isNamePromptOpen, setIsNamePromptOpen] = useState(false);
@@ -47,14 +45,11 @@ const PublicNotePage = () => {
         setNote(fetchedNote);
         setLoading(false);
         
-        // Handle increment logic
         if (!hasIncremented) {
           if (userProfile) {
-            // Priority 1: User Profile
             incrementViewCount(id, userProfile).catch(err => console.error('View increment error:', err));
             hasIncremented = true;
           } else {
-             // Priority 2: Guest tracking from LocalStorage
              const storedName = localStorage.getItem("guest_viewer_name");
              const storedId = localStorage.getItem("guest_viewer_id");
              
@@ -65,9 +60,7 @@ const PublicNotePage = () => {
                 }).catch(err => console.error('View increment error:', err));
                 hasIncremented = true;
              } else {
-                // Priority 3: Prompt for name if none found
                 setIsNamePromptOpen(true);
-                // We'll increment after the prompt is submitted
              }
           }
         }
@@ -84,11 +77,9 @@ const PublicNotePage = () => {
     const trimmedName = visitorName.trim() || "Guest Reader";
     const guestId = "guest_" + Date.now();
     
-    // Save for future visits
     localStorage.setItem("guest_viewer_name", trimmedName);
     localStorage.setItem("guest_viewer_id", guestId);
     
-    // Increment count
     incrementViewCount(id, { 
         uid: guestId, 
         displayName: trimmedName 
@@ -99,7 +90,7 @@ const PublicNotePage = () => {
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied");
+    toast.success("Public note link copied!");
   };
 
   if (loading) {
@@ -112,21 +103,15 @@ const PublicNotePage = () => {
 
   if (!note) {
     return (
-      <Box sx={{ textAlign: "center", mt: 16 }}>
-        <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-2px' }}>Access denied</Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 6, fontWeight: 500, opacity: 0.6 }}>
-          This note is no longer available or was made private by the author.
+      <Container maxWidth="sm" sx={{ textAlign: "center", mt: 12 }}>
+        <Typography variant="h4" fontWeight={800} mb={2}>Note Unavailable</Typography>
+        <Typography variant="body1" color="text.secondary" mb={4}>
+          This note does not exist or was made private by the author.
         </Typography>
-        <Button 
-          variant="contained" 
-          component={Link} 
-          to="/login" 
-          startIcon={<LoginIcon />}
-          sx={{ borderRadius: 1, px: 6, py: 1.5, fontWeight: 700 }}
-        >
-          Sign in to your space
+        <Button variant="contained" component={Link} to="/" startIcon={<LoginIcon />} sx={{ borderRadius: 3, px: 4 }}>
+          Go to Home
         </Button>
-      </Box>
+      </Container>
     );
   }
 
@@ -139,134 +124,103 @@ const PublicNotePage = () => {
             component={Link} 
             to="/" 
             startIcon={<BackIcon />} 
-            sx={{ fontWeight: 700, borderRadius: 1, px: 3, color: 'text.secondary' }}
+            sx={{ fontWeight: 700, borderRadius: 2 }}
           >
-            My notes
+            Back to Application
           </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleCopyLink} 
-            startIcon={<CopyIcon />}
-            sx={{ borderRadius: 1, fontWeight: 700, px: 4 }}
-          >
-            Copy link
-          </Button>
+
+          <Stack direction="row" spacing={1.5}>
+            <ExportMenu noteTitle={note.title || "Untitled Document"} htmlContent={note.content} />
+            <Button 
+              variant="contained" 
+              onClick={handleCopyLink} 
+              startIcon={<CopyIcon />}
+              sx={{ borderRadius: 3, fontWeight: 700, px: 3 }}
+            >
+              Share Link
+            </Button>
+          </Stack>
         </Box>
 
         <Box>
-            <Typography variant="h1" gutterBottom 
-                sx={{ 
-                    fontSize: { xs: "2.5rem", sm: "4rem" }, 
-                    fontWeight: 800, 
-                    letterSpacing: "-2.5px", 
-                    lineHeight: 1.1,
-                    mb: 5
-                }}
+            <Typography 
+              variant="h1" 
+              gutterBottom 
+              sx={{ 
+                  fontSize: { xs: "2.2rem", sm: "3.5rem" }, 
+                  fontWeight: 800, 
+                  letterSpacing: "-0.03em", 
+                  lineHeight: 1.15,
+                  mb: 3
+              }}
             >
                 {note.title || "Untitled Document"}
             </Typography>
             
-            <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 6 }}>
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Avatar sx={{ 
-                        width: 48, 
-                        height: 48, 
-                        bgcolor: "primary.main", 
-                        fontSize: '1.25rem', 
-                        fontWeight: 800,
-                    }}>
-                        {note.authorName?.charAt(0) || "U"}
-                    </Avatar>
-                    <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{note.authorName || "Guest Member"}</Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, opacity: 0.6 }}>
-                                Shared on {note.updatedAt ? format(note.updatedAt.toDate(), "MMM dd, yyyy") : "Recently"}
+            <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 4 }}>
+                <Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main", fontWeight: 700 }}>
+                    {note.authorName?.charAt(0) || "U"}
+                </Avatar>
+                <Box>
+                    <Typography variant="subtitle1" fontWeight={700}>{note.authorName || "Author"}</Typography>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Typography variant="caption" color="text.secondary">
+                            Updated {note.updatedAt?.toDate ? format(note.updatedAt.toDate(), "MMM dd, yyyy") : "Recently"}
+                        </Typography>
+                        <Divider orientation="vertical" flexItem sx={{ height: 12, my: "auto" }} />
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                            <ViewIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                            <Typography variant="caption" fontWeight={700} color="text.secondary">
+                                {note.viewCount || 0} views
                             </Typography>
-                            <Divider orientation="vertical" flexItem sx={{ height: 12, my: "auto", borderRightWidth: 1.5 }} />
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                                <ViewIcon sx={{ fontSize: 14, opacity: 0.6 }} />
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
-                                    {note.viewCount || 0} READS
-                                </Typography>
-                            </Stack>
                         </Stack>
-                    </Box>
-                </Stack>
+                    </Stack>
+                </Box>
             </Stack>
 
-            <Box 
-                dangerouslySetInnerHTML={{ __html: note.content }} 
-                sx={{ 
-                    fontSize: "1.125rem",
-                    lineHeight: 1.8,
-                    fontWeight: 500,
-                    color: 'text.primary',
-                    "& h1": { fontSize: "2.5rem", fontWeight: 800, mb: 3, letterSpacing: "-1.5px" },
-                    "& h2": { fontSize: "2rem", fontWeight: 700, mb: 2, letterSpacing: "-0.75px" },
-                    "& blockquote": { 
-                        borderLeft: "6px solid", 
-                        borderColor: alpha(theme.palette.primary.main, 0.3), 
-                        pl: 4, 
-                        py: 1,
-                        my: 4,
-                        fontStyle: "italic", 
-                        color: "text.secondary",
-                        backgroundColor: alpha(theme.palette.primary.main, 0.02),
-                        borderRadius: '2px 12px 12px 2px'
-                    },
-                    "& code": {
-                        backgroundColor: alpha(theme.palette.divider, 0.1),
-                        padding: "4px 8px",
-                        borderRadius: "8px",
-                        fontFamily: "monospace",
-                        fontSize: "0.95em",
-                        fontWeight: 700
-                    },
-                    "& img": { maxWidth: "100%", height: "auto", borderRadius: 1, my: 4 }
-                }}
-            />
+            {note.tags && note.tags.length > 0 && (
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 4 }}>
+                {note.tags.map((t) => (
+                  <Chip key={t} label={`#${t}`} size="small" variant="outlined" sx={{ borderRadius: 2, fontWeight: 600 }} />
+                ))}
+              </Stack>
+            )}
 
-            <Divider sx={{ my: 8 }} />
-            
-            {/* End-of-note Monitization Block */}
-            <Box sx={{ width: '100%', mb: 4, display: 'flex', justifyContent: 'center' }}>
-                <AdSense adSlot="3200385772" />
-            </Box>
+            {/* Sanitized HTML Content */}
+            <HtmlViewer content={note.content} />
         </Box>
       </Stack>
 
+      {/* Guest Reader Name Modal */}
       <Dialog 
         open={isNamePromptOpen} 
         disableEscapeKeyDown
-        PaperProps={{ sx: { borderRadius: 2, px: 1, py: 1 } }}
+        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800 }}>Welcome to Notes Spot</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800 }}>Welcome to OpenNotes Reader</DialogTitle>
         <DialogContent>
-            <Typography variant="body2" sx={{ mb: 2, fontWeight: 500, color: 'text.secondary' }}>
-                How would you like to be remembered as a reader?
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Please enter your name to register as a reader for this document.
             </Typography>
             <TextField
                 autoFocus
                 fullWidth
-                placeholder="Your name"
+                placeholder="Your Name..."
                 variant="outlined"
                 value={visitorName}
                 onChange={(e) => setVisitorName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitVisitorName()}
-                sx={{ 
-                    "& .MuiOutlinedInput-root": { borderRadius: 1.5, fontWeight: 700 }
-                }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
         </DialogContent>
-        <DialogActions sx={{ pb: 3, px: 3 }}>
+        <DialogActions sx={{ p: 2 }}>
             <Button 
                 fullWidth 
                 variant="contained" 
                 onClick={handleSubmitVisitorName}
-                sx={{ borderRadius: 1.5, py: 1.5, fontWeight: 800 }}
+                sx={{ borderRadius: 2, py: 1.2, fontWeight: 700 }}
             >
-                Start reading
+                Start Reading
             </Button>
         </DialogActions>
       </Dialog>

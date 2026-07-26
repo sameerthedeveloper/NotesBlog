@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   Box, 
@@ -12,15 +12,25 @@ import {
   IconButton,
   Tooltip,
   Stack,
-  alpha,
-  useTheme,
-  Breadcrumbs,
-  Link as MuiLink,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
-  FormControlLabel
+  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemAvatar,
+  Avatar,
+  Paper,
+  Chip,
+  LinearProgress,
+  useTheme,
+  useMediaQuery,
+  Fab
 } from "@mui/material";
 import { 
   ArrowBack as BackIcon, 
@@ -33,31 +43,37 @@ import {
   PushPinOutlined as UnpinnedIcon,
   FavoriteBorder as FavoriteIcon, 
   Favorite as FavoriteFilledIcon,
-  CloudDoneOutlined as SavedIcon,
-  CloudSyncOutlined as SavingIcon,
   MoreVert as MoreIcon,
-  ChevronLeft as ChevronLeftIcon,
-  VisibilityOutlined as ViewIcon
+  VisibilityOutlined as ViewIcon,
+  Edit as EditIcon,
+  Check as SaveIcon,
+  Close as CloseIcon
 } from "@mui/icons-material";
-import NoteEditor from "../components/NoteEditor";
 import TagInput from "../components/TagInput";
-import ViewersDialog from "../features/notes/components/ViewersDialog";
+import ExportMenu from "../components/ExportMenu";
+import ContentRenderer from "../components/ContentRenderer";
 import { useAuth } from "../context/AuthContext";
 import { 
   createNote, 
   updateNote, 
   getNoteById, 
-  deleteNote 
+  deleteNote,
+  subscribeNoteViews 
 } from "../features/notes/services/notesService";
-import { useDebounce } from "../utils/useDebounce";
+import { extractNoteMetadata } from "../utils/metadataExtractor";
+import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
 
-const NoteEditorPage = () => {
+// Lazy Load Heavy TipTap Rich Text Editor for Zero Initial Reader Bundle Overhead
+const LazyTipTapEditor = lazy(() => import("../components/TipTapEditor"));
+
+export const NoteEditorPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const theme = useTheme();
-  
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState([]);
@@ -66,247 +82,457 @@ const NoteEditorPage = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [versions, setVersions] = useState([]);
   
-  const [loading, setLoading] = useState(id ? true : false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
-  
+  const [loading, setLoading] = useState(Boolean(id));
+  const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(!id); // New notes start in edit mode; existing notes start in read mode
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [viewersDialogOpen, setViewersDialogOpen] = useState(false);
-  const debouncedContent = useDebounce(content, 2000);
-  const debouncedTitle = useDebounce(title, 2000);
-  const initialLoad = useRef(true);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [recentViews, setRecentViews] = useState([]);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
+  // Load existing note
   useEffect(() => {
-    if (id) {
-      const fetchNote = async () => {
-        try {
-          const note = await getNoteById(id);
-          if (note) {
-            if (note.authorId !== currentUser.uid) {
-              toast.error("Access denied");
-              navigate("/");
-              return;
-            }
-            setTitle(note.title || "");
-            setContent(note.content || "");
-            setTags(note.tags || []);
-            setVisibility(note.visibility || "private");
-            setIsPinned(note.isPinned || false);
-            setIsFavorite(note.isFavorite || false);
-            setVersions(note.versions || []);
-            setLastSaved(new Date());
-          } else {
-            toast.error("Note not found");
+    if (!id) return;
+    const fetchNote = async () => {
+      try {
+        const note = await getNoteById(id);
+        if (note) {
+          if (note.authorId !== currentUser.uid) {
+            toast.error("You do not have permission to edit this note.");
             navigate("/");
+            return;
           }
-        } catch (error) {
-          toast.error("Error fetching note");
-        } finally {
-          setLoading(false);
-          initialLoad.current = false;
+          setTitle(note.title || "");
+          setContent(note.content || "");
+          setTags(note.tags || []);
+          setVisibility(note.visibility || "private");
+          setIsPinned(note.isPinned || false);
+          setIsFavorite(note.isFavorite || false);
+          setVersions(note.versions || []);
+        } else {
+          toast.error("Note not found");
+          navigate("/notes");
         }
+      } catch {
+        toast.error("Failed to load note");
+      } finally {
+        setLoading(false);
       }
-      fetchNote();
-    } else {
-        initialLoad.current = false;
-    }
+    };
+    fetchNote();
   }, [id, currentUser.uid, navigate]);
 
+  // Track Reading Progress
   useEffect(() => {
-    if (id && !initialLoad.current && (debouncedContent || debouncedTitle)) {
-      const autoSave = async () => {
-        setIsSaving(true);
-        try {
-          await updateNote(id, { 
-            content: debouncedContent, 
-            title: debouncedTitle,
-            tags,
-            visibility,
-            isPinned,
-            isFavorite
-          }, { saveVersion: true });
-          setLastSaved(new Date());
-        } catch (error) {
-          console.error("Auto-save failed", error);
-        } finally {
-          setIsSaving(false);
-        }
-      };
-      autoSave();
-    }
-  }, [debouncedContent, debouncedTitle, id, tags, visibility, isPinned, isFavorite]);
+    const handleScroll = () => {
+      const scrollPos = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const docHeight = document.documentElement.scrollHeight;
+      const totalDist = docHeight - windowHeight;
+      if (totalDist > 0) {
+        setScrollProgress(Math.min(100, Math.max(0, (scrollPos / totalDist) * 100)));
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  const handleManualSave = async () => {
-    if (!title.trim() && !content.trim()) {
-      toast.error("Note is empty");
-      return;
-    }
+  // Subscribe to real-time viewer tracking
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribe = subscribeNoteViews(id, (views) => {
+      setRecentViews(views);
+    });
+    return () => unsubscribe();
+  }, [id]);
 
-    setIsSaving(true);
+  // Extract Metadata for Reading Mode Stats
+  const metaStats = useMemo(() => {
+    return extractNoteMetadata(content);
+  }, [content]);
+
+  // Save handler
+  const handleSaveContent = async (updatedHtml = content) => {
+    setSaving(true);
     const noteData = {
-      title,
-      content,
+      title: title || "Untitled Note",
+      content: updatedHtml,
       tags,
       visibility,
       isPinned,
       isFavorite,
       authorId: currentUser.uid,
-      authorName: currentUser.displayName
+      authorName: currentUser.displayName || "Author"
     };
 
     try {
       if (id) {
         await updateNote(id, noteData, { saveVersion: true });
+        toast.success("Note saved successfully!");
+        if (isMobile) {
+          setIsEditing(false);
+        }
       } else {
         const newId = await createNote(noteData);
-        navigate(`/note/${newId}/edit`);
+        toast.success("Note created!");
+        navigate(`/note/${newId}`, { replace: true });
       }
-      setLastSaved(new Date());
-      toast.success("All changes saved");
-    } catch (error) {
-      toast.error("Cloud sync failed");
+    } catch {
+      toast.error("Failed to save note to Firestore");
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
   const handleShare = () => {
     if (visibility !== "public") {
-      toast.error("Change visibility to public first");
+      toast.error("Please set note visibility to 'Public' to share it.");
       return;
     }
-    navigator.clipboard.writeText(`${window.location.origin}/note/${id}`);
-    toast.success("Link copied to clipboard");
+    const publicUrl = `${window.location.origin}/note/${id}`;
+    navigator.clipboard.writeText(publicUrl);
+    toast.success("Public note link copied to clipboard!");
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this note?")) {
+      try {
+        await deleteNote(id);
+        toast.success("Note deleted");
+        navigate("/notes");
+      } catch {
+        toast.error("Failed to delete note");
+      }
+    }
   };
 
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress size={40} thickness={4} color="primary" />
+        <CircularProgress />
       </Box>
     );
   }
 
+  // Render Fullscreen Mobile Editor or Desktop Editor Form
+  const renderEditorForm = () => (
+    <Box sx={{ p: { xs: 1, sm: 0 } }}>
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Note Title..."
+          variant="standard"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          InputProps={{
+            disableUnderline: true,
+            sx: {
+              fontSize: { xs: "1.5rem", sm: "2.25rem" },
+              fontWeight: 800,
+              mb: 2,
+              "& input::placeholder": { color: "text.disabled" }
+            }
+          }}
+        />
+
+        <Box sx={{ mb: 2 }}>
+          <TagInput tags={tags} setTags={setTags} />
+        </Box>
+
+        <Stack direction="row" spacing={3} alignItems="center" sx={{ p: 1.5, borderRadius: 3, bgcolor: "action.hover", width: "fit-content" }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={visibility === "public"}
+                onChange={(e) => setVisibility(e.target.checked ? "public" : "private")}
+              />
+            }
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                {visibility === "public" ? <PublicIcon color="primary" fontSize="small" /> : <PrivateIcon color="disabled" fontSize="small" />}
+                <Typography variant="body2" fontWeight={600}>
+                  {visibility === "public" ? "Public (Anyone with link)" : "Private (Only Me)"}
+                </Typography>
+              </Stack>
+            }
+          />
+        </Stack>
+      </Box>
+
+      {/* Lazy Loaded TipTap Rich Text Editor */}
+      <Suspense 
+        fallback={
+          <Paper variant="outlined" sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
+            <CircularProgress size={32} />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontWeight: 500 }}>
+              Loading Rich Text Editor...
+            </Typography>
+          </Paper>
+        }
+      >
+        <LazyTipTapEditor
+          initialContent={content}
+          onChange={(html) => setContent(html)}
+          onSave={(html) => handleSaveContent(html)}
+          onMetadataExtracted={(meta) => {
+            if ((!title || title.trim() === "" || title === "Untitled Note") && meta.title) {
+              setTitle(meta.title);
+            }
+          }}
+          autoSave={Boolean(id)}
+        />
+      </Suspense>
+    </Box>
+  );
+
   return (
-    <Container maxWidth="md" sx={{ py: 2 }}>
-      <Stack spacing={3}>
-        {/* Navigation & Status bar */}
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <Container maxWidth="lg" sx={{ py: 2, px: { xs: 1, sm: 3 } }}>
+      {/* Sticky Top Reading Progress Bar */}
+      {scrollProgress > 0 && (
+        <Box sx={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1400, height: 3 }}>
+          <LinearProgress variant="determinate" value={scrollProgress} sx={{ height: 3 }} />
+        </Box>
+      )}
+
+      {/* Header Action Controls */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 3 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton onClick={() => navigate("/")} size="small" sx={{ mr: 1 }}>
-              <ChevronLeftIcon />
+            <IconButton onClick={() => navigate("/notes")} sx={{ borderRadius: 2 }}>
+              <BackIcon />
             </IconButton>
-            <Box>
-                <Stack direction="row" spacing={1} alignItems="center">
-                    {isSaving ? <SavingIcon fontSize="small"  color="disabled" /> : <SavedIcon fontSize="small" color="disabled" />}
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                        {isSaving ? "Saving..." : lastSaved ? "Stored in cloud" : "Editing..."}
-                    </Typography>
-                </Stack>
-            </Box>
+            <Typography variant="h6" fontWeight={700} noWrap sx={{ maxWidth: { xs: 180, sm: 400 } }}>
+              {title || (id ? "Note Reader" : "Create Note")}
+            </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={1}>
-            <Tooltip title={isPinned ? "Unpin" : "Pin"}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {/* Toggle Edit / Read Mode Button */}
+            {id && (
+              <Button
+                variant={isEditing ? "outlined" : "contained"}
+                startIcon={isEditing ? <CloseIcon /> : <EditIcon />}
+                onClick={() => setIsEditing(!isEditing)}
+                sx={{ borderRadius: 3, fontWeight: 700 }}
+              >
+                {isEditing ? "Done" : "Edit"}
+              </Button>
+            )}
+
+            <ExportMenu noteTitle={title || "Untitled Note"} htmlContent={content} />
+
+            <Tooltip title={isPinned ? "Unpin Note" : "Pin Note"}>
               <IconButton onClick={() => setIsPinned(!isPinned)} color={isPinned ? "primary" : "default"}>
                 {isPinned ? <PinnedIcon /> : <UnpinnedIcon />}
               </IconButton>
             </Tooltip>
+
+            <Tooltip title={isFavorite ? "Unfavorite" : "Mark Favorite"}>
+              <IconButton onClick={() => setIsFavorite(!isFavorite)} color={isFavorite ? "error" : "default"}>
+                {isFavorite ? <FavoriteFilledIcon /> : <FavoriteIcon />}
+              </IconButton>
+            </Tooltip>
+
+            {id && (
+              <Tooltip title="Real-Time Viewers">
+                <IconButton onClick={() => setViewersDialogOpen(true)} color="info">
+                  <ViewIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+
             <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
               <MoreIcon />
             </IconButton>
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)} PaperProps={{ sx: { borderRadius: 1, mt: 1 } }}>
-              <MenuItem onClick={handleShare}>
+
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+              <MenuItem onClick={() => { setAnchorEl(null); handleShare(); }}>
                 <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
-                <ListItemText>Share with link</ListItemText>
+                <ListItemText primary="Copy Public Link" />
               </MenuItem>
               {versions.length > 0 && (
-                <MenuItem onClick={() => setAnchorEl(null)}>
+                <MenuItem onClick={() => { setAnchorEl(null); setHistoryDialogOpen(true); }}>
                   <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
-                  <ListItemText>Revision history</ListItemText>
+                  <ListItemText primary="Version History" />
                 </MenuItem>
               )}
               {id && (
-                <MenuItem onClick={() => { setAnchorEl(null); setViewersDialogOpen(true); }}>
-                  <ListItemIcon><ViewIcon fontSize="small" /></ListItemIcon>
-                  <ListItemText>Recent views</ListItemText>
+                <MenuItem onClick={() => { setAnchorEl(null); handleDelete(); }} sx={{ color: "error.main" }}>
+                  <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+                  <ListItemText primary="Delete Note" />
                 </MenuItem>
               )}
-              <Divider />
-              <MenuItem onClick={async () => {
-                  if (window.confirm("Move to trash?")) {
-                      await deleteNote(id);
-                      navigate("/");
-                  }
-              }} sx={{ color: "error.main" }}>
-                <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>
             </Menu>
-            <Button 
-                variant={id ? "text" : "contained"} 
-                onClick={handleManualSave}
-                disabled={isSaving}
-                sx={{ borderRadius: 1, fontWeight: 700, px: 3 }}
-            >
-              {id ? "Sync now" : "Create note"}
-            </Button>
+
+            {isEditing && (
+              <Button
+                variant="contained"
+                onClick={() => handleSaveContent(content)}
+                disabled={saving}
+                sx={{ borderRadius: 3, px: 3, fontWeight: 700 }}
+              >
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            )}
           </Stack>
-        </Box>
+        </Stack>
+      </Paper>
 
-        {/* Workspace */}
-        <Box>
-           <TextField
-            fullWidth
-            placeholder="Title"
-            variant="standard"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            InputProps={{
-              disableUnderline: true,
-              sx: { 
-                fontSize: { xs: "1.75rem", sm: "2.5rem" }, 
-                fontWeight: 700, 
-                mb: 2, 
-                letterSpacing: "-0.5px",
-                "& input::placeholder": { color: alpha(theme.palette.text.primary, 0.2) }
-              }
-            }}
-          />
+      {/* Main Area: Reading View vs Mobile Fullscreen Editor */}
+      {!isEditing ? (
+        /* Reading Mode */
+        <Box sx={{ width: "100%", maxWidth: 900, mx: "auto" }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h3" component="h1" fontWeight={800} letterSpacing="-1px" sx={{ mb: 1.5, fontSize: { xs: "2rem", sm: "3rem" } }}>
+              {title || "Untitled Note"}
+            </Typography>
 
-          <Box sx={{ mb: 4 }}>
-             <TagInput tags={tags} setTags={setTags} />
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ gap: 1, mb: 2 }}>
+              <Chip label={`⚡ ${metaStats.readingTimeMinutes} min read`} size="small" color="primary" variant="soft" />
+              <Chip label={`${metaStats.wordCount} words`} size="small" variant="outlined" />
+              <Chip label={`Level: ${metaStats.difficultyLevel}`} size="small" variant="outlined" />
+              <Chip label={visibility === "public" ? "Public" : "Private"} size="small" color={visibility === "public" ? "success" : "default"} />
+            </Stack>
+
+            {tags.length > 0 && (
+              <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ mb: 2 }}>
+                {tags.map((t, idx) => (
+                  <Chip key={idx} label={`#${t}`} size="small" sx={{ borderRadius: 2 }} />
+                ))}
+              </Stack>
+            )}
+
+            <Divider sx={{ my: 3 }} />
           </Box>
 
-          <Stack direction="row" spacing={3} sx={{ mb: 4, py: 1.5, px: 2, borderRadius: 2, bgcolor: alpha(theme.palette.divider, 0.1) }}>
-             <FormControlLabel
-                control={
-                  <Switch 
-                    checked={visibility === "public"} 
-                    onChange={(e) => setVisibility(e.target.checked ? "public" : "private")} 
-                    size="small"
-                  />
-                }
-                label={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    {visibility === "public" ? <PublicIcon color="primary" fontSize="small" /> : <PrivateIcon color="disabled" fontSize="small" />}
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {visibility === "public" ? "Published to web" : "Private (only you)"}
-                    </Typography>
-                  </Stack>
-                }
-              />
-          </Stack>
+          {/* Render Sanitized HTML Content */}
+          <ContentRenderer content={content} />
 
-          <NoteEditor content={content} onUpdate={setContent} />
+          {/* Floating Mobile Edit Button */}
+          {isMobile && (
+            <Fab
+              color="primary"
+              variant="extended"
+              onClick={() => setIsEditing(true)}
+              sx={{
+                position: "fixed",
+                bottom: 80,
+                right: 20,
+                zIndex: 1250,
+                borderRadius: 4,
+                px: 3,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.25)"
+              }}
+            >
+              <EditIcon sx={{ mr: 1 }} /> Edit Note
+            </Fab>
+          )}
         </Box>
-      </Stack>
+      ) : isMobile ? (
+        /* Fullscreen Mobile Editor Dialog */
+        <Dialog fullScreen open={isEditing} onClose={() => setIsEditing(false)}>
+          <Paper elevation={0} sx={{ p: 2, borderBottom: 1, borderColor: "divider", borderRadius: 0 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={1} alignItems="center">
+                <IconButton onClick={() => setIsEditing(false)}>
+                  <BackIcon />
+                </IconButton>
+                <Typography variant="h6" fontWeight={700}>
+                  {id ? "Edit Note" : "New Note"}
+                </Typography>
+              </Stack>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={() => handleSaveContent(content)}
+                disabled={saving}
+                sx={{ borderRadius: 3, fontWeight: 700 }}
+              >
+                {saving ? "Saving..." : "Done"}
+              </Button>
+            </Stack>
+          </Paper>
+          <Box sx={{ p: 2, overflowY: "auto", flexGrow: 1 }}>
+            {renderEditorForm()}
+          </Box>
+        </Dialog>
+      ) : (
+        /* Desktop Editor */
+        renderEditorForm()
+      )}
 
-      <ViewersDialog 
-        open={viewersDialogOpen} 
-        onClose={() => setViewersDialogOpen(false)} 
-        noteId={id} 
-      />
+      {/* Viewers Analytics Dialog */}
+      <Dialog open={viewersDialogOpen} onClose={() => setViewersDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Recent Viewers & Analytics</DialogTitle>
+        <DialogContent dividers>
+          {recentViews.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No viewers recorded yet.
+            </Typography>
+          ) : (
+            <List>
+              {recentViews.map((v) => (
+                <ListItem key={v.id}>
+                  <ListItemAvatar>
+                    <Avatar src={v.photoURL || ""}>{v.displayName?.charAt(0) || "V"}</Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={v.displayName || "Anonymous Viewer"}
+                    secondary={v.viewedAt ? `Viewed ${formatDistanceToNow(v.viewedAt.toDate ? v.viewedAt.toDate() : new Date(v.viewedAt))} ago` : "Just now"}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewersDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Version History Dialog */}
+      <Dialog open={historyDialogOpen} onClose={() => setHistoryDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Note Version History</DialogTitle>
+        <DialogContent dividers>
+          {versions.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No previous versions recorded.
+            </Typography>
+          ) : (
+            <List>
+              {versions.map((ver, idx) => (
+                <ListItem 
+                  key={idx}
+                  secondaryAction={
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => {
+                        setContent(ver.content || "");
+                        setTitle(ver.title || title);
+                        setHistoryDialogOpen(false);
+                        toast.success("Restored version from history!");
+                      }}
+                    >
+                      Restore
+                    </Button>
+                  }
+                >
+                  <ListItemText
+                    primary={ver.title || `Version ${versions.length - idx}`}
+                    secondary={ver.timestamp ? `Saved ${formatDistanceToNow(ver.timestamp.toDate ? ver.timestamp.toDate() : new Date(ver.timestamp))} ago` : `Version #${idx + 1}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

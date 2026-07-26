@@ -50,18 +50,30 @@ const AuthLayout = () => {
       <Container maxWidth="xs" sx={{ position: "relative", zIndex: 1 }}>
         <Stack spacing={4} alignItems="center">
             <Stack spacing={1} alignItems="center">
+                <Box 
+                  component="img" 
+                  src="/logo.svg" 
+                  alt="OpenNotes" 
+                  sx={{ 
+                    height: 72, 
+                    width: 72, 
+                    mb: 1, 
+                    borderRadius: 3, 
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)' 
+                  }} 
+                />
                 <Typography 
-                    variant="h2" 
+                    variant="h3" 
                     component="h1" 
                     sx={{ 
                         fontWeight: 900, 
-                        letterSpacing: "-2.5px", 
-                        color: "primary.main",
+                        letterSpacing: "-1.5px", 
+                        color: "text.primary",
                         textAlign: "center",
                         lineHeight: 1
                     }}
                 >
-                    NotesBlog
+                    OpenNotes
                 </Typography>
                 <Typography variant="body1" color="text.secondary" fontWeight={500} sx={{ textAlign: "center", opacity: 0.8 }}>
                     Capture Ideas. Share Wisdom. Everywhere.

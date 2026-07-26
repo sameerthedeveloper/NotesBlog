@@ -1,0 +1,15 @@
+{
+  "short_name": "OpenNotes",
+  "name": "OpenNotes - Secure Rich Text Notes Platform",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0B57D0",
+  "background_color": "#F0F4F9"
+}
