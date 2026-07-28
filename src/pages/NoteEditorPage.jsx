@@ -30,7 +30,8 @@ import {
   LinearProgress,
   useTheme,
   useMediaQuery,
-  Fab
+  Fab,
+  Alert
 } from "@mui/material";
 import { 
   ArrowBack as BackIcon, 
@@ -72,7 +73,7 @@ export const NoteEditorPage = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -289,6 +290,13 @@ export const NoteEditorPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 2, px: { xs: 1, sm: 3 } }}>
+      {/* Mobile Notice Banner */}
+      {isMobile && (
+        <Alert severity="info" variant="filled" sx={{ mb: 3, borderRadius: 3, fontWeight: 600 }}>
+          Note creation and editing are available on desktop devices only.
+        </Alert>
+      )}
+
       {/* Sticky Top Reading Progress Bar */}
       {scrollProgress > 0 && (
         <Box sx={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1400, height: 3 }}>
@@ -296,92 +304,107 @@ export const NoteEditorPage = () => {
         </Box>
       )}
 
-      {/* Header Action Controls */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 3 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton onClick={() => navigate("/notes")} sx={{ borderRadius: 2 }}>
-              <BackIcon />
-            </IconButton>
-            <Typography variant="h6" fontWeight={700} noWrap sx={{ maxWidth: { xs: 180, sm: 400 } }}>
-              {title || (id ? "Note Reader" : "Create Note")}
-            </Typography>
-          </Stack>
-
-          <Stack direction="row" spacing={1} alignItems="center">
-            {/* Toggle Edit / Read Mode Button */}
-            {id && (
-              <Button
-                variant={isEditing ? "outlined" : "contained"}
-                startIcon={isEditing ? <CloseIcon /> : <EditIcon />}
-                onClick={() => setIsEditing(!isEditing)}
-                sx={{ borderRadius: 3, fontWeight: 700 }}
-              >
-                {isEditing ? "Done" : "Edit"}
-              </Button>
-            )}
-
-            <ExportMenu noteTitle={title || "Untitled Note"} htmlContent={content} />
-
-            <Tooltip title={isPinned ? "Unpin Note" : "Pin Note"}>
-              <IconButton onClick={() => setIsPinned(!isPinned)} color={isPinned ? "primary" : "default"}>
-                {isPinned ? <PinnedIcon /> : <UnpinnedIcon />}
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title={isFavorite ? "Unfavorite" : "Mark Favorite"}>
-              <IconButton onClick={() => setIsFavorite(!isFavorite)} color={isFavorite ? "error" : "default"}>
-                {isFavorite ? <FavoriteFilledIcon /> : <FavoriteIcon />}
-              </IconButton>
-            </Tooltip>
-
-            {id && (
-              <Tooltip title="Real-Time Viewers">
-                <IconButton onClick={() => setViewersDialogOpen(true)} color="info">
-                  <ViewIcon />
+      {/* Mobile New Note Block */}
+      {isMobile && !id ? (
+        <Paper variant="outlined" sx={{ p: 4, textAlign: "center", borderRadius: 4, mt: 2 }}>
+          <Typography variant="h6" fontWeight={700} paragraph>
+            Desktop Device Required
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 460, mx: "auto" }}>
+            Note creation and editing are available on desktop devices only. Please open OpenNotes on a desktop browser to create or edit notes.
+          </Typography>
+          <Button variant="contained" onClick={() => navigate("/")} sx={{ borderRadius: 3, px: 3, fontWeight: 700 }}>
+            Back to Dashboard
+          </Button>
+        </Paper>
+      ) : (
+        <>
+          {/* Header Action Controls */}
+          <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 3 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <IconButton onClick={() => navigate("/notes")} sx={{ borderRadius: 2 }}>
+                  <BackIcon />
                 </IconButton>
-              </Tooltip>
-            )}
+                <Typography variant="h6" fontWeight={700} noWrap sx={{ maxWidth: { xs: 180, sm: 400 } }}>
+                  {title || (id ? "Note Reader" : "Create Note")}
+                </Typography>
+              </Stack>
 
-            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-              <MoreIcon />
-            </IconButton>
+              <Stack direction="row" spacing={1} alignItems="center">
+                {/* Toggle Edit / Read Mode Button (Desktop Only) */}
+                {id && !isMobile && (
+                  <Button
+                    variant={isEditing ? "outlined" : "contained"}
+                    startIcon={isEditing ? <CloseIcon /> : <EditIcon />}
+                    onClick={() => setIsEditing(!isEditing)}
+                    sx={{ borderRadius: 3, fontWeight: 700 }}
+                  >
+                    {isEditing ? "Done" : "Edit"}
+                  </Button>
+                )}
 
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-              <MenuItem onClick={() => { setAnchorEl(null); handleShare(); }}>
-                <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
-                <ListItemText primary="Copy Public Link" />
-              </MenuItem>
-              {versions.length > 0 && (
-                <MenuItem onClick={() => { setAnchorEl(null); setHistoryDialogOpen(true); }}>
-                  <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
-                  <ListItemText primary="Version History" />
-                </MenuItem>
-              )}
-              {id && (
-                <MenuItem onClick={() => { setAnchorEl(null); handleDelete(); }} sx={{ color: "error.main" }}>
-                  <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-                  <ListItemText primary="Delete Note" />
-                </MenuItem>
-              )}
-            </Menu>
+                <ExportMenu noteTitle={title || "Untitled Note"} htmlContent={content} />
 
-            {isEditing && (
-              <Button
-                variant="contained"
-                onClick={() => handleSaveContent(content)}
-                disabled={saving}
-                sx={{ borderRadius: 3, px: 3, fontWeight: 700 }}
-              >
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            )}
-          </Stack>
-        </Stack>
-      </Paper>
+                <Tooltip title={isPinned ? "Unpin Note" : "Pin Note"}>
+                  <IconButton onClick={() => setIsPinned(!isPinned)} color={isPinned ? "primary" : "default"}>
+                    {isPinned ? <PinnedIcon /> : <UnpinnedIcon />}
+                  </IconButton>
+                </Tooltip>
 
-      {/* Main Area: Reading View vs Mobile Fullscreen Editor */}
-      {!isEditing ? (
+                <Tooltip title={isFavorite ? "Unfavorite" : "Mark Favorite"}>
+                  <IconButton onClick={() => setIsFavorite(!isFavorite)} color={isFavorite ? "error" : "default"}>
+                    {isFavorite ? <FavoriteFilledIcon /> : <FavoriteIcon />}
+                  </IconButton>
+                </Tooltip>
+
+                {id && (
+                  <Tooltip title="Real-Time Viewers">
+                    <IconButton onClick={() => setViewersDialogOpen(true)} color="info">
+                      <ViewIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                  <MoreIcon />
+                </IconButton>
+
+                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+                  <MenuItem onClick={() => { setAnchorEl(null); handleShare(); }}>
+                    <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
+                    <ListItemText primary="Copy Public Link" />
+                  </MenuItem>
+                  {versions.length > 0 && (
+                    <MenuItem onClick={() => { setAnchorEl(null); setHistoryDialogOpen(true); }}>
+                      <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
+                      <ListItemText primary="Version History" />
+                    </MenuItem>
+                  )}
+                  {id && (
+                    <MenuItem onClick={() => { setAnchorEl(null); handleDelete(); }} sx={{ color: "error.main" }}>
+                      <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
+                      <ListItemText primary="Delete Note" />
+                    </MenuItem>
+                  )}
+                </Menu>
+
+                {isEditing && !isMobile && (
+                  <Button
+                    variant="contained"
+                    onClick={() => handleSaveContent(content)}
+                    disabled={saving}
+                    sx={{ borderRadius: 3, px: 3, fontWeight: 700 }}
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </Button>
+                )}
+              </Stack>
+            </Stack>
+          </Paper>
+
+          {/* Main Area: Reading View vs Mobile Fullscreen Editor */}
+          {(!isEditing || isMobile) ? (
         /* Reading Mode */
         <Box sx={{ width: "100%", maxWidth: 900, mx: "auto" }}>
           <Box sx={{ mb: 3 }}>
@@ -533,6 +556,8 @@ export const NoteEditorPage = () => {
           <Button onClick={() => setHistoryDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+        </>
+      )}
     </Container>
   );
 };

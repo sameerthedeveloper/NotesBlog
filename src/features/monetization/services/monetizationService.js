@@ -22,41 +22,40 @@ export const getCreatorMonetization = async (uid) => {
     if (snap.exists()) {
       return { id: snap.id, ...snap.data() };
     }
-    // Default initial document format if none exists yet
-    return {
-      uid,
-      status: "not_connected", // 'not_connected' | 'pending' | 'verified' | 'rejected'
-      activeProviderId: null,
-      publisherId: "",
-      publisherName: "",
-      publisherEmail: "",
-      placements: {
-        above_article: true,
-        below_article: true,
-        inside_article: false,
-        sidebar: true,
-        home_feed: false,
-        search_results: false,
-        collections: false,
-      },
-      slotIds: {
-        above_article: "",
-        below_article: "",
-        inside_article: "",
-        sidebar: "",
-      },
-      settings: {
-        adDensity: "medium", // 'low' | 'medium' | 'high'
-        autoInjectAds: true,
-        safeCategoriesOnly: true,
-      },
-      createdAt: null,
-      updatedAt: null,
-    };
   } catch (error) {
-    console.error("Error fetching creator monetization:", error);
-    throw error;
+    console.warn("Could not fetch creator monetization (using fallback):", error?.message || error);
   }
+  // Default initial document format if none exists yet or permission denied
+  return {
+    uid,
+    status: "not_connected", // 'not_connected' | 'pending' | 'verified' | 'rejected'
+    activeProviderId: null,
+    publisherId: "",
+    publisherName: "",
+    publisherEmail: "",
+    placements: {
+      above_article: true,
+      below_article: true,
+      inside_article: false,
+      sidebar: true,
+      home_feed: false,
+      search_results: false,
+      collections: false,
+    },
+    slotIds: {
+      above_article: "",
+      below_article: "",
+      inside_article: "",
+      sidebar: "",
+    },
+    settings: {
+      adDensity: "medium", // 'low' | 'medium' | 'high'
+      autoInjectAds: true,
+      safeCategoriesOnly: true,
+    },
+    createdAt: null,
+    updatedAt: null,
+  };
 };
 
 /**

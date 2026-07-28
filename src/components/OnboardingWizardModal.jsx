@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Dialog,
   Box,
@@ -38,6 +38,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import { animateStepTransition } from "../utils/animationManager";
 import toast from "react-hot-toast";
 
 // ─── Step Illustrations ───────────────────────────────────────────────────────
@@ -205,7 +206,6 @@ const ShareIllustration = () => {
 };
 
 const PersonalizeIllustration = ({ currentMode }) => {
-  const theme = useTheme();
   return (
     <Box sx={{ width: 220, height: 160, mx: "auto", display: "flex", gap: 2, justifyContent: "center", pt: 2 }}>
       {/* Light theme preview */}
@@ -255,7 +255,6 @@ const PersonalizeIllustration = ({ currentMode }) => {
 };
 
 const CelebrationIllustration = () => {
-  const theme = useTheme();
   return (
     <Box sx={{ width: 220, height: 180, mx: "auto", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
       {/* Confetti dots */}
@@ -297,59 +296,49 @@ const STEPS = [
     id: 1,
     icon: <DashboardIcon />,
     title: "Welcome to OpenNotes",
-    subtitle: "Your personal knowledge workspace",
-    description: "We're thrilled to have you! OpenNotes is where your ideas, research, and knowledge come together in a beautiful, organized workspace.",
+    subtitle: "Your modern knowledge platform",
+    description: "Discover a modern platform for creating, organizing, and sharing knowledge.",
     color: "#0B57D0",
     Illustration: WelcomeIllustration,
     highlights: null,
   },
   {
     id: 2,
-    icon: <NoteAddIcon />,
-    title: "Create Beautiful Notes",
-    subtitle: "Write with a powerful rich editor",
-    description: "Craft stunning documents with our full-featured editor. Format text, embed images, add code blocks, tables, and seamlessly convert Markdown to HTML.",
+    icon: <OrganizeIcon />,
+    title: "Create & Organize",
+    subtitle: "Intuitive note workflow",
+    description: "Organize notes into collections with a clean and intuitive workflow.",
     color: "#7C3AED",
     Illustration: EditorIllustration,
-    highlights: ["Rich Text Formatting", "Embedded Images", "Code Blocks & Tables", "Markdown → HTML"],
+    highlights: ["Rich Formatting", "Smart Tags", "Collections"],
   },
   {
     id: 3,
-    icon: <OrganizeIcon />,
-    title: "Organize Everything",
-    subtitle: "Collections, tags, and smart filtering",
-    description: "Keep your knowledge base structured. Use collections to group notes, add tags for cross-referencing, and bookmark your most important content.",
+    icon: <AutoStoriesIcon />,
+    title: "Discover & Learn",
+    subtitle: "Global knowledge feed",
+    description: "Read and explore knowledge shared by creators around the world.",
     color: "#059669",
-    Illustration: OrganizeIllustration,
-    highlights: ["Collections & Folders", "Smart Tags", "Bookmarks & Favorites", "Pinned Notes"],
+    Illustration: ShareIllustration,
+    highlights: ["Global Feed", "Public Links", "Author Pages"],
   },
   {
     id: 4,
-    icon: <ShareIcon />,
-    title: "Share Your Knowledge",
-    subtitle: "Publish, collaborate, and grow",
-    description: "Share notes with unique public links, publish to the Discover feed to build an audience, and collaborate with others in real time.",
-    color: "#D97706",
-    Illustration: ShareIllustration,
-    highlights: ["Public Note Sharing", "Unique Share Links", "Discover Feed", "View Analytics"],
-  },
-  {
-    id: 5,
     icon: <PersonalizeIcon />,
-    title: "Personalize Your Workspace",
-    subtitle: "Make it feel like home",
-    description: "Choose the visual theme that suits you best. Your preference is saved and synced across sessions.",
+    title: "Personalize",
+    subtitle: "Themes & Preferences",
+    description: "Customize your reading experience with themes and preferences.",
     color: "#EF4444",
     Illustration: PersonalizeIllustration,
     highlights: null,
     isPersonalize: true,
   },
   {
-    id: 6,
+    id: 5,
     icon: <CelebrationIcon />,
-    title: "You're All Set! 🎉",
-    subtitle: "Your workspace is ready",
-    description: "Everything is in place. Create your first note and start building your personal knowledge base — your ideas deserve a beautiful home.",
+    title: "You're Ready 🎉",
+    subtitle: "Start exploring OpenNotes",
+    description: "Start exploring OpenNotes.",
     color: "#0B57D0",
     Illustration: CelebrationIllustration,
     highlights: null,
@@ -360,7 +349,7 @@ const STEPS = [
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const OnboardingWizardModal = () => {
-  const { onboardingOpen, setOnboardingOpen, completeOnboarding, currentUser } = useAuth();
+  const { onboardingOpen, completeOnboarding } = useAuth();
   const { mode, toggleColorMode } = useAppTheme();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -374,6 +363,43 @@ const OnboardingWizardModal = () => {
   const totalSteps = STEPS.length;
   const currentStep = STEPS[step];
   const progress = ((step + 1) / totalSteps) * 100;
+  const contentRef = useRef(null);
+
+  // Animate step transitions
+  const animateTransition = useCallback((dir, fn) => {
+    setDirection(dir);
+    setExiting(true);
+    setTimeout(() => {
+      fn();
+      setExiting(false);
+      if (contentRef.current) {
+        animateStepTransition(contentRef.current, dir);
+      }
+    }, 180);
+  }, []);
+
+  const goNext = useCallback(() => {
+    if (step < totalSteps - 1) {
+      animateTransition("forward", () => setStep((s) => s + 1));
+    }
+  }, [step, totalSteps, animateTransition]);
+
+  const goBack = useCallback(() => {
+    if (step > 0) {
+      animateTransition("backward", () => setStep((s) => s - 1));
+    }
+  }, [step, animateTransition]);
+
+  const handleSkip = useCallback(async () => {
+    await completeOnboarding();
+  }, [completeOnboarding]);
+
+  const handleFinish = async (action) => {
+    await completeOnboarding();
+    toast.success("Welcome to OpenNotes! 🎉", { icon: "🚀", duration: 3500 });
+    if (action === "create") navigate("/note/new");
+    else navigate("/dashboard");
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -385,40 +411,7 @@ const OnboardingWizardModal = () => {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onboardingOpen, step]);
-
-  // Animate step transitions
-  const animateTransition = useCallback((dir, fn) => {
-    setDirection(dir);
-    setExiting(true);
-    setTimeout(() => {
-      fn();
-      setExiting(false);
-    }, 200);
-  }, []);
-
-  const goNext = () => {
-    if (step < totalSteps - 1) {
-      animateTransition("forward", () => setStep((s) => s + 1));
-    }
-  };
-
-  const goBack = () => {
-    if (step > 0) {
-      animateTransition("backward", () => setStep((s) => s - 1));
-    }
-  };
-
-  const handleSkip = async () => {
-    await completeOnboarding();
-  };
-
-  const handleFinish = async (action) => {
-    await completeOnboarding();
-    toast.success("Welcome to OpenNotes! 🎉", { icon: "🚀", duration: 3500 });
-    if (action === "create") navigate("/note/new");
-    else navigate("/dashboard");
-  };
+  }, [onboardingOpen, step, totalSteps, goNext, goBack, handleSkip]);
 
   if (!onboardingOpen) return null;
 
@@ -534,6 +527,7 @@ const OnboardingWizardModal = () => {
 
         {/* Content */}
         <Box
+          ref={contentRef}
           sx={{
             px: { xs: 2.5, sm: 4 },
             pt: 3,

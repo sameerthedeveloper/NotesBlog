@@ -73,14 +73,24 @@ export const AppThemeProvider = ({ children }) => {
         components: {
           MuiCssBaseline: {
             styleOverrides: {
+              html: {
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                "&::-webkit-scrollbar": { display: "none", width: "0px", height: "0px" },
+              },
               body: {
-                scrollbarColor: isLight ? "#D3E3FD transparent" : "#0842A0 transparent",
-                "&::-webkit-scrollbar": { width: "10px" },
-                "&::-webkit-scrollbar-thumb": { 
-                    backgroundColor: isLight ? "#C4C7C5" : "#444746", 
-                    borderRadius: "10px",
-                    border: `3px solid ${isLight ? '#F0F4F9' : '#131314'}`
-                },
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                "&::-webkit-scrollbar": { display: "none", width: "0px", height: "0px" },
+              },
+              "*": {
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                "&::-webkit-scrollbar": { display: "none", width: "0px", height: "0px" },
+              },
+              "*:focus-visible": {
+                outline: `2px solid ${isLight ? "#0B57D0" : "#A8C7FA"}`,
+                outlineOffset: "2px",
               },
             },
           },
@@ -88,14 +98,15 @@ export const AppThemeProvider = ({ children }) => {
             defaultProps: { disableElevation: true },
             styleOverrides: {
               root: {
-                borderRadius: 12, // Raised for standard MuiButtons
+                borderRadius: 12,
                 padding: "8px 24px",
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "all 0.2s cubic-bezier(0.2, 0, 0, 1)",
+                minHeight: 40,
               },
               containedPrimary: {
                 backgroundColor: palette.primary.main,
                 color: "#FFFFFF",
-                "&:hover": { backgroundColor: "#1765cc" },
+                "&:hover": { backgroundColor: isLight ? "#0842A0" : "#8AB4F8" },
               },
             },
           },
@@ -103,28 +114,37 @@ export const AppThemeProvider = ({ children }) => {
             defaultProps: { variant: "elevation", elevation: 1 },
             styleOverrides: {
               root: {
-                borderRadius: 16, // Beautiful 16px edge for cards
+                borderRadius: 16,
                 border: `1px solid ${palette.divider}`,
                 backgroundColor: palette.background.paper,
-                boxShadow: isLight ? "0px 4px 12px rgba(0,0,0,0.04)" : "0px 4px 12px rgba(0,0,0,0.2)",
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: isLight ? "0px 4px 12px rgba(0,0,0,0.04)" : "0px 4px 12px rgba(0,0,0,0.25)",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
                 "&:hover": {
-                   borderColor: palette.primary.main,
-                   backgroundColor: alpha(palette.primary.main, 0.02),
+                   borderColor: alpha(palette.primary.main, 0.4),
                 }
               },
             },
+          },
+          MuiDialog: {
+            styleOverrides: {
+              paper: {
+                borderRadius: 20,
+                border: `1px solid ${palette.divider}`,
+                backgroundImage: "none",
+              }
+            }
           },
           MuiTextField: {
             defaultProps: { variant: "outlined" },
             styleOverrides: {
               root: {
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: 12, // Smooth inputs
+                  borderRadius: 12,
                   backgroundColor: isLight ? alpha(palette.text.primary, 0.02) : alpha(palette.text.primary, 0.05),
-                  "& fieldset": { borderColor: 'transparent' },
+                  "& fieldset": { borderColor: isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)" },
+                  "&:hover fieldset": { borderColor: palette.primary.main },
                   "&.Mui-focused": {
-                      backgroundColor: isLight ? '#FFFFFF' : '#111111',
+                      backgroundColor: isLight ? '#FFFFFF' : '#1A1A1C',
                       "& fieldset": { borderColor: palette.primary.main, borderWidth: '2px' },
                   }
                 },
@@ -138,7 +158,7 @@ export const AppThemeProvider = ({ children }) => {
                 color: palette.text.primary,
                 boxShadow: "none",
                 minHeight: 64,
-                borderBottom: "none"
+                borderBottom: `1px solid ${palette.divider}`
               },
             },
           },
@@ -146,7 +166,7 @@ export const AppThemeProvider = ({ children }) => {
             styleOverrides: {
               paper: {
                 backgroundColor: isLight ? "#F0F4F9" : "#131314",
-                borderRight: "none",
+                borderRight: `1px solid ${palette.divider}`,
                 width: 256,
                 padding: "12px",
               },
@@ -155,9 +175,10 @@ export const AppThemeProvider = ({ children }) => {
           MuiListItemButton: {
             styleOverrides: {
               root: {
-                borderRadius: 12, // Soft highlight
+                borderRadius: 12,
                 margin: "2px 8px",
                 padding: "8px 20px",
+                transition: "all 0.15s ease",
                 "&.Mui-selected": {
                   backgroundColor: palette.primary.container,
                   color: palette.primary.onContainer,
@@ -169,7 +190,7 @@ export const AppThemeProvider = ({ children }) => {
           MuiChip: {
             styleOverrides: {
               root: {
-                borderRadius: 8, // Little radius for tags
+                borderRadius: 8,
                 fontWeight: 600,
               }
             }
@@ -177,7 +198,7 @@ export const AppThemeProvider = ({ children }) => {
           MuiFab: {
              styleOverrides: {
                  root: {
-                     borderRadius: 16, // Return to Squircle
+                     borderRadius: 16,
                      boxShadow: "0px 4px 20px rgba(0,0,0,0.1)",
                      backgroundColor: isLight ? '#FFFFFF' : '#333333',
                      color: palette.primary.main,

@@ -27,12 +27,15 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { subscribeUserNotes, deleteNote, togglePin, toggleFavorite } from "../features/notes/services/notesService";
 import NoteCard from "../components/NoteCard";
+import { useTheme, useMediaQuery } from "@mui/material";
 import NoteCardGrid from "../components/NoteCardGrid";
 import toast from "react-hot-toast";
 
 export const NotesPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,14 +96,16 @@ export const NotesPage = () => {
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/note/new")}
-          sx={{ borderRadius: 3, px: 3, fontWeight: 700 }}
-        >
-          New Note
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/note/new")}
+            sx={{ borderRadius: 3, px: 3, fontWeight: 700 }}
+          >
+            New Note
+          </Button>
+        )}
       </Box>
 
       {/* Control Bar */}

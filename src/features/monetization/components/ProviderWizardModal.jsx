@@ -154,7 +154,7 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
               {getAllProviders().map((p) => {
                 const isSelected = selectedProviderId === p.id;
                 return (
-                  <Grid item xs={12} sm={6} key={p.id}>
+                  <Grid size={{ xs: 12, sm: 6 }} key={p.id}>
                     <Card
                       variant="outlined"
                       onClick={() => setSelectedProviderId(p.id)}

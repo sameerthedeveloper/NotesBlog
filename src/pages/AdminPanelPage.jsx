@@ -42,12 +42,10 @@ export const AdminPanelPage = () => {
   const [migrating, setMigrating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, msg: "" });
 
-  if (!isSuperAdmin(currentUser)) {
-    return <UnauthorizedPage />;
-  }
+  const isAdmin = isSuperAdmin(currentUser);
 
-  const fetchAdminStats = async () => {
-    if (!isSuperAdmin(currentUser)) return;
+  const fetchAdminStats = React.useCallback(async () => {
+    if (!isAdmin) return;
     try {
       const snap = await getDocs(collection(db, "notes"));
       const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -64,7 +62,17 @@ export const AdminPanelPage = () => {
     } catch {
       // Ignored
     }
-  };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAdminStats();
+    }
+  }, [isAdmin, fetchAdminStats]);
+
+  if (!isAdmin) {
+    return <UnauthorizedPage />;
+  }
 
   const handleUpdateStatus = async (uid, providerId, status) => {
     try {
@@ -75,10 +83,6 @@ export const AdminPanelPage = () => {
       toast.error("Failed to update verification status.");
     }
   };
-
-  useEffect(() => {
-    fetchAdminStats();
-  }, []);
 
   const handleRunBatchMigration = async () => {
     setMigrating(true);

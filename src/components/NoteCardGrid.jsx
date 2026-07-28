@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Grid, Box, Typography, Button, Skeleton } from "@mui/material";
 import { Notes as NotesIcon, Add as AddIcon } from "@mui/icons-material";
 import NoteCard from "./NoteCard";
 import toast from "react-hot-toast";
+import { staggerReveal } from "../utils/animationManager";
 
 export const NoteCardGrid = ({
   notes = [],
@@ -16,6 +17,15 @@ export const NoteCardGrid = ({
   onCreateClick,
   emptyMessage = "No notes found"
 }) => {
+  const gridRef = useRef(null);
+
+  useEffect(() => {
+    if (gridRef.current && notes.length > 0) {
+      const cards = gridRef.current.querySelectorAll(".note-card-item");
+      staggerReveal(cards, { stagger: 0.04, duration: 0.3 });
+    }
+  }, [notes, viewMode]);
+
   if (loading) {
     return (
       <Grid container spacing={3} sx={{ width: "100%", mt: 0.5 }}>
@@ -59,9 +69,10 @@ export const NoteCardGrid = ({
   }
 
   return (
-    <Grid container spacing={3} sx={{ width: "100%", mt: 0.5, mb: 2 }}>
+    <Grid ref={gridRef} container spacing={3} sx={{ width: "100%", mt: 0.5, mb: 2 }}>
       {notes.map((note) => (
         <Grid
+          className="note-card-item"
           size={{
             xs: 12,
             sm: viewMode === "grid" ? 6 : 12,

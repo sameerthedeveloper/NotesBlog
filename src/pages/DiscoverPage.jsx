@@ -89,7 +89,7 @@ const DiscoverPage = () => {
       {loading ? (
         <Grid container spacing={3}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Grid key={i} item xs={12} sm={6} md={4} lg={3}>
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
               <NoteCardSkeleton />
             </Grid>
           ))}
@@ -99,7 +99,7 @@ const DiscoverPage = () => {
       ) : (
         <Grid container spacing={3}>
           {notes.map((note) => (
-            <Grid key={note.id} item xs={12} sm={6} md={4} lg={3}>
+            <Grid key={note.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
               <NoteCard 
                 note={note} 
                 onClick={() => navigate(`/note/${note.id}`)}

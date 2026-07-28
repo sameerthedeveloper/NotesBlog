@@ -150,7 +150,7 @@ export const LandingPage = () => {
 
         <Grid container spacing={3}>
           {features.map((feature, idx) => (
-            <Grid item xs={12} sm={6} md={4} key={idx}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
               <Card
                 variant="outlined"
                 sx={{

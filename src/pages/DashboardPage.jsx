@@ -24,8 +24,7 @@ import {
   ListItemIcon,
   ListItemText,
   useTheme,
-  useMediaQuery,
-  alpha
+  useMediaQuery
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -82,7 +81,7 @@ export const DashboardPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -294,96 +293,7 @@ export const DashboardPage = () => {
         )}
       </Box>
 
-      {/* Mobile Quick Action Cards (Visible only on mobile) */}
-      {isMobile && (
-        <Stack direction="row" spacing={1.5} sx={{ mb: 3, width: "100%" }}>
-          {/* Auto Convert button */}
-          <Paper
-            variant="outlined"
-            onClick={handleRunMigration}
-            sx={{
-              flex: 1,
-              px: 1.5,
-              py: 1.25,
-              borderRadius: "16px",
-              cursor: "pointer",
-              bgcolor: theme.palette.mode === "dark" ? "rgba(11, 87, 208, 0.12)" : "#EFF6FF",
-              borderColor: alpha(theme.palette.primary.main, 0.2),
-              transition: "all 0.15s ease",
-              "&:active": { transform: "scale(0.97)", opacity: 0.9 },
-            }}
-          >
-            <Stack direction="row" spacing={1.25} alignItems="center">
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "10px",
-                  bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "#FFFFFF",
-                  color: "primary.main",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}
-              >
-                <MigrateIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" fontWeight={700} color="primary.main" noWrap sx={{ fontSize: "0.82rem", lineHeight: 1.3 }}>
-                  Auto Convert
-                </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ fontSize: "0.7rem" }}>
-                  Markdown → HTML
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
 
-          {/* New Note button */}
-          <Paper
-            onClick={() => navigate("/note/new")}
-            sx={{
-              flex: 1,
-              px: 1.5,
-              py: 1.25,
-              borderRadius: "16px",
-              cursor: "pointer",
-              bgcolor: "primary.main",
-              color: "#FFFFFF",
-              boxShadow: `0 6px 18px ${alpha(theme.palette.primary.main, 0.35)}`,
-              transition: "all 0.15s ease",
-              "&:active": { transform: "scale(0.97)", opacity: 0.9 }
-            }}
-          >
-            <Stack direction="row" spacing={1.25} alignItems="center">
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "10px",
-                  bgcolor: "rgba(255,255,255,0.2)",
-                  color: "#FFFFFF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}
-              >
-                <AddIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ fontSize: "0.82rem", lineHeight: 1.3 }}>
-                  New Note
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8, fontSize: "0.7rem" }} noWrap display="block">
-                  Create a note
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Stack>
-      )}
 
       {/* Overview Statistics Section */}
       <Box sx={{ mb: { xs: 3, sm: 4 } }}>
