@@ -67,6 +67,7 @@ import OnboardingWizardModal from "../components/OnboardingWizardModal";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { useNetworkStatus } from "../utils/offlineSyncManager";
+import { usePlatformSettings } from "../context/PlatformSettingsContext";
 
 import { isSuperAdmin } from "../config/adminConfig";
 
@@ -85,6 +86,7 @@ const AppLayout = () => {
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const { isOnline } = useNetworkStatus();
+  const { settings } = usePlatformSettings();
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -115,7 +117,9 @@ const AppLayout = () => {
     { text: "Discover", icon: <ExploreIcon />, path: "/discover" },
     { text: "Shared Notes", icon: <ShareIcon />, path: "/shared" },
     { text: "Bookmarks", icon: <BookmarkIcon />, path: "/bookmarks" },
-    { text: "Monetization", icon: <MonetizationIcon />, path: "/monetization" },
+    ...(settings?.creatorMonetization?.enableCreatorMonetization !== false
+      ? [{ text: "Monetization", icon: <MonetizationIcon />, path: "/monetization" }]
+      : []),
     { text: "Search", icon: <SearchIcon />, path: "/search" },
     { text: "Notifications", icon: <NotificationsIcon />, path: "/notifications" },
     { text: "Profile", icon: <PersonIcon />, path: "/profile" },
@@ -334,15 +338,17 @@ const AppLayout = () => {
               </Box>
 
               <Stack direction="row" spacing={0.5} alignItems="center">
-                <Tooltip title="AI Prompt Builder">
-                  <IconButton
-                    color="primary"
-                    onClick={() => setPromptModalOpen(true)}
-                    sx={{ minWidth: 44, minHeight: 44 }}
-                  >
-                    <SparklesIcon />
-                  </IconButton>
-                </Tooltip>
+                {settings?.ai?.enableAI !== false && (
+                  <Tooltip title="AI Prompt Builder">
+                    <IconButton
+                      color="primary"
+                      onClick={() => setPromptModalOpen(true)}
+                      sx={{ minWidth: 44, minHeight: 44 }}
+                    >
+                      <SparklesIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
 
                 <Tooltip title="Notifications">
                   <IconButton
@@ -569,7 +575,29 @@ const AppLayout = () => {
           </Box>
         )}
 
-        <Outlet />
+        {settings?.general?.maintenanceMode && !isSuperAdmin(currentUser) ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              my: 4,
+              borderRadius: 4,
+              textAlign: "center",
+              bgcolor: mode === "dark" ? "rgba(234, 179, 8, 0.15)" : "#FEF3C7",
+              border: "1px solid",
+              borderColor: mode === "dark" ? "rgba(234, 179, 8, 0.3)" : "#FDE68A",
+            }}
+          >
+            <Typography variant="h5" fontWeight={800} color={mode === "dark" ? "#FDE047" : "#92400E"} gutterBottom>
+              🛠️ Platform Maintenance Mode
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: "auto" }}>
+              {settings?.general?.maintenanceMessage || "OpenNotes is currently undergoing scheduled platform maintenance. Please check back shortly."}
+            </Typography>
+          </Paper>
+        ) : (
+          <Outlet />
+        )}
         </Container>
       </Box>
 

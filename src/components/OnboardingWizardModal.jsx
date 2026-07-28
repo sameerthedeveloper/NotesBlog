@@ -205,16 +205,20 @@ const ShareIllustration = () => {
   );
 };
 
-const PersonalizeIllustration = ({ currentMode }) => {
+const PersonalizeIllustration = ({ currentMode, onSelectMode }) => {
   return (
     <Box sx={{ width: 220, height: 160, mx: "auto", display: "flex", gap: 2, justifyContent: "center", pt: 2 }}>
       {/* Light theme preview */}
-      <Box sx={{
-        width: 88, height: 110, borderRadius: 3, overflow: "hidden",
-        border: "2px solid", borderColor: currentMode === "light" ? "primary.main" : "divider",
-        bgcolor: "#F0F4F9", transition: "border-color 0.3s",
-        boxShadow: currentMode === "light" ? `0 0 0 3px ${alpha("#0B57D0", 0.2)}` : "none",
-      }}>
+      <Box
+        onClick={() => onSelectMode?.("light")}
+        sx={{
+          width: 88, height: 110, borderRadius: 3, overflow: "hidden", cursor: "pointer",
+          border: "2px solid", borderColor: currentMode === "light" ? "primary.main" : "divider",
+          bgcolor: "#F0F4F9", transition: "all 0.2s ease",
+          boxShadow: currentMode === "light" ? `0 0 0 3px ${alpha("#0B57D0", 0.25)}` : "none",
+          "&:hover": { transform: "translateY(-2px)" },
+        }}
+      >
         <Box sx={{ height: 24, bgcolor: "#FFFFFF", px: 1, display: "flex", alignItems: "center", gap: 0.5 }}>
           <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#0B57D0" }} />
           <Box sx={{ flex: 1, height: 4, borderRadius: 1, bgcolor: "#E0E0E0" }} />
@@ -229,13 +233,18 @@ const PersonalizeIllustration = ({ currentMode }) => {
           <Typography sx={{ fontSize: "0.5rem", color: "#444", fontWeight: 700 }}>Light</Typography>
         </Box>
       </Box>
+
       {/* Dark theme preview */}
-      <Box sx={{
-        width: 88, height: 110, borderRadius: 3, overflow: "hidden",
-        border: "2px solid", borderColor: currentMode === "dark" ? "primary.main" : "divider",
-        bgcolor: "#131314", transition: "border-color 0.3s",
-        boxShadow: currentMode === "dark" ? `0 0 0 3px ${alpha("#A8C7FA", 0.2)}` : "none",
-      }}>
+      <Box
+        onClick={() => onSelectMode?.("dark")}
+        sx={{
+          width: 88, height: 110, borderRadius: 3, overflow: "hidden", cursor: "pointer",
+          border: "2px solid", borderColor: currentMode === "dark" ? "primary.main" : "divider",
+          bgcolor: "#131314", transition: "all 0.2s ease",
+          boxShadow: currentMode === "dark" ? `0 0 0 3px ${alpha("#A8C7FA", 0.25)}` : "none",
+          "&:hover": { transform: "translateY(-2px)" },
+        }}
+      >
         <Box sx={{ height: 24, bgcolor: "#1E1F22", px: 1, display: "flex", alignItems: "center", gap: 0.5 }}>
           <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#A8C7FA" }} />
           <Box sx={{ flex: 1, height: 4, borderRadius: 1, bgcolor: "#2A2B2E" }} />
@@ -263,7 +272,7 @@ const CelebrationIllustration = () => {
         { top: "10%", right: "12%", color: "#7C3AED", size: 8 },
         { top: "30%", left: "5%", color: "#059669", size: 6 },
         { top: "20%", right: "20%", color: "#D97706", size: 10 },
-        { bottom: "20%", left: "10%", color: "#EF4444", size: 8 },
+        { bottom: "20%", left: "10%", color: "#0B57D0", size: 8 },
         { bottom: "15%", right: "10%", color: "#0B57D0", size: 10 },
         { bottom: "35%", left: "20%", color: "#7C3AED", size: 6 },
         { top: "50%", right: "5%", color: "#059669", size: 8 },
@@ -328,7 +337,7 @@ const STEPS = [
     title: "Personalize",
     subtitle: "Themes & Preferences",
     description: "Customize your reading experience with themes and preferences.",
-    color: "#EF4444",
+    color: "#0B57D0",
     Illustration: PersonalizeIllustration,
     highlights: null,
     isPersonalize: true,
@@ -473,18 +482,20 @@ const OnboardingWizardModal = () => {
         sx={{ backdropFilter: "blur(6px)" }}
       >
         {/* Progress bar */}
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          sx={{
-            height: 3,
-            bgcolor: alpha(currentStep.color, 0.1),
-            "& .MuiLinearProgress-bar": {
-              bgcolor: currentStep.color,
-              transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-            }
-          }}
-        />
+        <Box sx={{ width: "100%", overflow: "hidden" }}>
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{
+              height: 4,
+              bgcolor: alpha(currentStep.color, 0.12),
+              "& .MuiLinearProgress-bar": {
+                bgcolor: currentStep.color,
+                transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              }
+            }}
+          />
+        </Box>
 
         {/* Header */}
         <Box sx={{ px: { xs: 2.5, sm: 4 }, pt: { xs: 2, sm: 3 }, pb: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -574,7 +585,16 @@ const OnboardingWizardModal = () => {
 
           {/* Illustration */}
           <Box sx={{ my: { xs: 2, sm: 3 } }}>
-            {isPersonalize ? <Illustration currentMode={mode} /> : <Illustration />}
+            {isPersonalize ? (
+              <Illustration
+                currentMode={mode}
+                onSelectMode={(targetMode) => {
+                  if (targetMode !== mode) toggleColorMode();
+                }}
+              />
+            ) : (
+              <Illustration />
+            )}
           </Box>
 
           {/* Personalization controls */}
@@ -586,7 +606,9 @@ const OnboardingWizardModal = () => {
               <RadioGroup
                 row
                 value={mode}
-                onChange={() => toggleColorMode()}
+                onChange={(e) => {
+                  if (e.target.value !== mode) toggleColorMode();
+                }}
                 sx={{ justifyContent: "center", gap: 2 }}
               >
                 <FormControlLabel
@@ -738,7 +760,7 @@ const OnboardingWizardModal = () => {
                 transition: "all 0.2s ease",
               }}
             >
-              {step === totalSteps - 2 ? "Let's go!" : "Next"}
+              Next
             </Button>
           </Box>
         )}

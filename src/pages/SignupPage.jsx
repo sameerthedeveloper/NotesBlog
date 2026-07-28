@@ -31,6 +31,7 @@ import {
   ArrowForward as ArrowForwardIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
+import { usePlatformSettings } from "../context/PlatformSettingsContext";
 import toast from "react-hot-toast";
 
 /* -------- helpers -------- */
@@ -97,6 +98,8 @@ const SocialButton = ({ icon, label, onClick, disabled, loading }) => {
 const SignupPage = () => {
   const theme = useTheme();
   const { signup, loginWithGoogle } = useAuth();
+  const { settings } = usePlatformSettings();
+  const isRegistrationDisabled = settings?.general?.registrationEnabled === false;
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || "/";
@@ -126,11 +129,15 @@ const SignupPage = () => {
   const confirmError  = touched.confirmPassword && confirmPassword && confirmPassword !== password
     ? "Passwords do not match" : "";
   const strength = getStrength(password);
-  const canSubmit = name.trim() && validateEmail(email) && passwordOk && confirmPassword === password && acceptTerms;
+  const canSubmit = !isRegistrationDisabled && name.trim() && validateEmail(email) && passwordOk && confirmPassword === password && acceptTerms;
 
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
+      if (isRegistrationDisabled) {
+        toast.error("User registrations are currently paused by the platform administrator.");
+        return;
+      }
       setTouched({ name: true, email: true, password: true, confirmPassword: true });
       if (!canSubmit) return;
       setError("");
@@ -149,10 +156,14 @@ const SignupPage = () => {
         setLoading(false);
       }
     },
-    [canSubmit, email, password, name, signup, navigate, from]
+    [canSubmit, email, password, name, signup, navigate, from, isRegistrationDisabled]
   );
 
   const handleGoogleSignIn = async () => {
+    if (isRegistrationDisabled) {
+      toast.error("User registrations are currently paused by the platform administrator.");
+      return;
+    }
     setError("");
     setSocialLoading("google");
     try {
@@ -167,7 +178,7 @@ const SignupPage = () => {
   };
 
   const isDark = theme.palette.mode === "dark";
-  const disableAll = loading || Boolean(socialLoading);
+  const disableAll = loading || Boolean(socialLoading) || isRegistrationDisabled;
 
   return (
     <Stack spacing={3}>
@@ -180,6 +191,13 @@ const SignupPage = () => {
           Free forever · No credit card required
         </Typography>
       </Stack>
+
+      {/* Registration Disabled Notice */}
+      {isRegistrationDisabled && (
+        <Alert severity="warning" sx={{ borderRadius: 2, fontWeight: 600 }}>
+          User registrations are currently paused by the platform administrator.
+        </Alert>
+      )}
 
       {/* Error */}
       <Collapse in={Boolean(error)} unmountOnExit>

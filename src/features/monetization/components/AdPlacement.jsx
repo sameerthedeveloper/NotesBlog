@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Chip, Button, useTheme, alpha } from "@mui/material";
 import { Verified as VerifiedIcon, Security as SecurityIcon, Add as AddIcon } from "@mui/icons-material";
 import { useMonetization } from "../../../context/MonetizationContext";
+import { usePlatformSettings } from "../../../context/PlatformSettingsContext";
 import { getCreatorMonetization } from "../services/monetizationService";
 import { getProviderById } from "../providers";
 import ProviderWizardModal from "./ProviderWizardModal";
@@ -19,6 +20,7 @@ export const AdPlacement = ({
 }) => {
   const theme = useTheme();
   const { monetizationState: ownMonetizationState } = useMonetization();
+  const { settings } = usePlatformSettings();
   const [creatorMonetization, setCreatorMonetization] = useState(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const isDark = theme.palette.mode === "dark";
@@ -40,6 +42,10 @@ export const AdPlacement = ({
       isMounted = false;
     };
   }, [targetUid]);
+
+  // Respect Global Feature Flags from Platform Control Center
+  if (settings?.advertisements?.enableAds === false) return null;
+  if (targetUid && settings?.creatorMonetization?.enableCreatorMonetization === false) return null;
 
   const activeMonetization = targetUid ? creatorMonetization : ownMonetizationState;
   const isEnabled = isPreview || activeMonetization?.placements?.[placement];
