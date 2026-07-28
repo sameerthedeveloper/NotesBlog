@@ -66,6 +66,7 @@ import PromptBuilderModal from "../components/PromptBuilderModal";
 import OnboardingWizardModal from "../components/OnboardingWizardModal";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../context/ThemeContext";
+import { useNetworkStatus } from "../utils/offlineSyncManager";
 
 import { isSuperAdmin } from "../config/adminConfig";
 
@@ -83,6 +84,7 @@ const AppLayout = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const { isOnline } = useNetworkStatus();
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -520,6 +522,28 @@ const AppLayout = () => {
         }}
       >
         <Container maxWidth="xl" disableGutters sx={{ maxWidth: 1440, mx: "auto", width: "100%", px: { xs: 0, sm: 0 } }}>
+          {/* Offline Status Banner */}
+          {!isOnline && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 1.5,
+                mb: 2.5,
+                borderRadius: 3,
+                bgcolor: mode === "dark" ? "rgba(234, 179, 8, 0.15)" : "#FEF3C7",
+                border: "1px solid",
+                borderColor: mode === "dark" ? "rgba(234, 179, 8, 0.3)" : "#FDE68A",
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              <Typography variant="body2" fontWeight={700} color={mode === "dark" ? "#FDE047" : "#92400E"}>
+                📡 Offline Mode Active — All note reads, creates, and edits are stored locally in IndexedDB and will auto-sync with Firebase upon reconnection.
+              </Typography>
+            </Paper>
+          )}
+
           {/* Breadcrumb Navigation (Hidden on Home Page & Mobile View) */}
         {!isMobile && location.pathname !== "/" && (
           <Box sx={{ mb: 2 }}>
