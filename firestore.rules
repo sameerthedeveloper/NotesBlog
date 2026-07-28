@@ -59,6 +59,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isSuperAdmin() || (request.auth != null && request.auth.uid == uid);
     }
+
+    // --- Platform Settings (Super Admin Writes, Public/Auth Read) ---
+    match /platformSettings/{settingDoc} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
     
     // --- Global Access Denied by Default (Super Admin Backup Exception) ---
     match /{document=**} {

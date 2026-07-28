@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { AppThemeProvider } from "./context/ThemeContext";
 import { MonetizationProvider } from "./context/MonetizationContext";
+import { PlatformSettingsProvider } from "./context/PlatformSettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 import { Box, CircularProgress, Skeleton, Container } from "@mui/material";
@@ -47,111 +48,70 @@ const LoadingFallback = () => (
 
 const PageSkeleton = () => (
   <Container maxWidth="lg" sx={{ mt: 4 }}>
-    <Skeleton variant="text" sx={{ fontSize: '3rem', width: '40%', mb: 2 }} />
-    <Skeleton variant="rectangular" height={40} sx={{ mb: 4, borderRadius: 2 }} />
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3 }}>
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <Skeleton key={i} variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
-      ))}
-    </Box>
+    <Skeleton variant="text" sx={{ fontSize: "3rem", width: "40%", mb: 2 }} />
+    <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 3, mb: 2 }} />
+    <Skeleton variant="rectangular" height={100} sx={{ borderRadius: 3 }} />
   </Container>
 );
 
 function App() {
   return (
     <AppThemeProvider>
-      <AuthProvider>
-        <MonetizationProvider>
-          <Router>
-            <Toaster position="top-right" />
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                {/* Auth Routes */}
-                <Route element={<AuthLayout />}>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<SignupPage />} />
-                </Route>
+      <PlatformSettingsProvider>
+        <AuthProvider>
+          <MonetizationProvider>
+            <Router>
+              <Toaster position="top-right" />
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  {/* Public Reader Route */}
+                  <Route path="/public/note/:id" element={
+                    <Suspense fallback={<PageSkeleton />}>
+                      <PublicNotePage />
+                    </Suspense>
+                  } />
 
-                {/* Public Note Viewer Route */}
-                <Route path="/note/:id" element={<PublicNotePage />} />
-
-                {/* Protected Workspace Routes */}
-                <Route element={<ProtectedRoute />}>
-                  <Route element={<AppLayout />}>
-                    <Route 
-                      path="/" 
-                      element={
-                        <Suspense fallback={<PageSkeleton />}>
-                          <DashboardPage />
-                        </Suspense>
-                      } 
-                    />
-                    <Route path="/dashboard" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <DashboardPage />
-                      </Suspense>
-                    } />
-                    <Route path="/notes" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <NotesPage />
-                      </Suspense>
-                    } />
-                    <Route path="/discover" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <DiscoverPage />
-                      </Suspense>
-                    } />
-                    <Route path="/shared" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <SharedNotesPage />
-                      </Suspense>
-                    } />
-                    <Route path="/bookmarks" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <BookmarksPage />
-                      </Suspense>
-                    } />
-                    <Route path="/monetization" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <MonetizationPage />
-                      </Suspense>
-                    } />
-                    <Route path="/search" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <SearchPage />
-                      </Suspense>
-                    } />
-                    <Route path="/notifications" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <NotificationsPage />
-                      </Suspense>
-                    } />
-                    <Route path="/settings" element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <SettingsPage />
-                      </Suspense>
-                    } />
-                    
-                    {/* Protected Admin Routes */}
-                    <Route element={<AdminRoute />}>
-                      <Route path="/admin" element={
-                        <Suspense fallback={<PageSkeleton />}>
-                          <AdminPanelPage />
-                        </Suspense>
-                      } />
-                    </Route>
-
-                    <Route path="/unauthorized" element={<UnauthorizedPage />} />
-                    <Route path="/note/new" element={<NoteEditorPage />} />
-                    <Route path="/note/:id/edit" element={<NoteEditorPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
+                  {/* Auth Routes */}
+                  <Route element={<AuthLayout />}>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
                   </Route>
-                </Route>
-              </Routes>
-            </Suspense>
-          </Router>
-        </MonetizationProvider>
-      </AuthProvider>
+
+                  {/* Main App Routes */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route element={<AppLayout />}>
+                      <Route path="/" element={<Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense>} />
+                      <Route path="/dashboard" element={<Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense>} />
+                      <Route path="/notes" element={<Suspense fallback={<PageSkeleton />}><NotesPage /></Suspense>} />
+                      <Route path="/discover" element={<Suspense fallback={<PageSkeleton />}><DiscoverPage /></Suspense>} />
+                      <Route path="/shared" element={<Suspense fallback={<PageSkeleton />}><SharedNotesPage /></Suspense>} />
+                      <Route path="/bookmarks" element={<Suspense fallback={<PageSkeleton />}><BookmarksPage /></Suspense>} />
+                      <Route path="/monetization" element={<Suspense fallback={<PageSkeleton />}><MonetizationPage /></Suspense>} />
+                      <Route path="/search" element={<Suspense fallback={<PageSkeleton />}><SearchPage /></Suspense>} />
+                      <Route path="/notifications" element={<Suspense fallback={<PageSkeleton />}><NotificationsPage /></Suspense>} />
+                      <Route path="/settings" element={<Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense>} />
+
+                      {/* Super Admin Protected Route */}
+                      <Route element={<AdminRoute />}>
+                        <Route path="/admin" element={
+                          <Suspense fallback={<PageSkeleton />}>
+                            <AdminPanelPage />
+                          </Suspense>
+                        } />
+                      </Route>
+
+                      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                      <Route path="/note/new" element={<NoteEditorPage />} />
+                      <Route path="/note/:id/edit" element={<NoteEditorPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                    </Route>
+                  </Route>
+                </Routes>
+              </Suspense>
+            </Router>
+          </MonetizationProvider>
+        </AuthProvider>
+      </PlatformSettingsProvider>
     </AppThemeProvider>
   );
 }
