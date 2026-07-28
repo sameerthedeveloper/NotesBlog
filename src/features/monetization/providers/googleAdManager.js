@@ -8,7 +8,7 @@ export class GoogleAdManagerProvider extends BaseAdProvider {
       description: "Enterprise ad server platform for managing premium direct sales, programmatic partners, and custom ad units.",
       website: "https://admanager.google.com",
       docUrl: "https://support.google.com/admanager",
-      logo: "https://www.gstatic.com/images/branding/product/2x/ad_manager_48dp.png",
+      logo: "https://www.gstatic.com/images/branding/product/2x/adsense_48dp.png",
       category: "Enterprise Ad Server",
       scriptUrlWhitelist: ["https://securepubads.g.doubleclick.net/tag/js/gpt.js"],
       defaultPlacements: [

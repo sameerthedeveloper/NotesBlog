@@ -82,18 +82,22 @@ export const saveCreatorMonetization = async (uid, data) => {
 
     // Record verification entry if status changed to pending
     if (data.status === "pending") {
-      const verifRef = doc(db, "providerVerifications", `${uid}_${data.activeProviderId || "provider"}`);
-      await setDoc(verifRef, {
-        uid,
-        providerId: data.activeProviderId,
-        publisherId: data.publisherId,
-        publisherName: data.publisherName,
-        publisherEmail: data.publisherEmail,
-        status: "pending",
-        submittedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        notes: "Submitted for platform review.",
-      }, { merge: true });
+      try {
+        const verifRef = doc(db, "providerVerifications", `${uid}_${data.activeProviderId || "provider"}`);
+        await setDoc(verifRef, {
+          uid,
+          providerId: data.activeProviderId,
+          publisherId: data.publisherId,
+          publisherName: data.publisherName,
+          publisherEmail: data.publisherEmail,
+          status: "pending",
+          submittedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          notes: "Submitted for platform review.",
+        }, { merge: true });
+      } catch (vErr) {
+        console.warn("Could not save verification request details:", vErr);
+      }
     }
 
     return payload;

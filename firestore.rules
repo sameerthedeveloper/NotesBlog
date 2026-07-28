@@ -51,7 +51,7 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
       // Allow individual creator to read/write their own verification submission document
       allow read, create, update: if request.auth != null && 
-          verifId.startsWith(request.auth.uid + "_");
+          verifId.matches('^' + request.auth.uid + '_.*');
     }
 
     // --- Creator Monetization Settings ---

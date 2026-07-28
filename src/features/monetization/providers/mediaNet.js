@@ -8,7 +8,7 @@ export class MediaNetProvider extends BaseAdProvider {
       description: "Yahoo! Bing Network contextual ad network offering high-yield display and native ad units.",
       website: "https://www.media.net",
       docUrl: "https://www.media.net/support",
-      logo: "https://www.media.net/assets/images/medianet-logo.png",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Media.net_logo.svg",
       category: "Contextual Ads",
       scriptUrlWhitelist: ["https://contextual.media.net/nloader.js"],
       defaultPlacements: [

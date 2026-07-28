@@ -555,14 +555,18 @@ const AppLayout = () => {
           elevation={0}
           sx={{
             position: "fixed",
-            bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+            bottom: "max(8px, env(safe-area-inset-bottom, 0px))",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "calc(100% - 32px)",
+            width: "calc(100% - 24px)",
             maxWidth: 420,
-            zIndex: 1300,
+            height: 72,
+            zIndex: 1400,
             borderRadius: "28px",
             p: "6px 8px",
+            display: "flex",
+            alignItems: "center",
+            boxSizing: "border-box",
             bgcolor: mode === "dark" ? "rgba(26, 27, 30, 0.85)" : "rgba(255, 255, 255, 0.85)",
             backdropFilter: "blur(24px) saturate(180%)",
             WebkitBackdropFilter: "blur(24px) saturate(180%)",
@@ -574,7 +578,7 @@ const AppLayout = () => {
             transition: "all 0.2s cubic-bezier(0.2, 0, 0, 1)",
           }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-around" sx={{ width: "100%" }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-around" sx={{ width: "100%", height: "100%" }}>
             {[
               { label: "Home", icon: <DashboardIcon sx={{ fontSize: 22 }} />, path: "/" },
               { label: "Notes", icon: <NotesIcon sx={{ fontSize: 22 }} />, path: "/notes" },
@@ -593,9 +597,10 @@ const AppLayout = () => {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    py: 0.75,
+                    py: 0.5,
                     px: 0.5,
                     minHeight: 48,
+                    height: "100%",
                     borderRadius: "20px",
                     cursor: "pointer",
                     userSelect: "none",

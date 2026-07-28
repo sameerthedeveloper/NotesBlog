@@ -8,7 +8,7 @@ export class CarbonAdsProvider extends BaseAdProvider {
       description: "Exclusive developer, designer, and tech audience ad network with minimal, elegant single-ad units.",
       website: "https://www.carbonads.net",
       docUrl: "https://www.carbonads.net",
-      logo: "https://cdn.carbonads.com/carbon.png",
+      logo: "https://raw.githubusercontent.com/Buuug7/carbon-ads-theme/master/carbon.png",
       category: "Developer & Design Ads",
       scriptUrlWhitelist: ["https://cdn.carbonads.com/carbon.js"],
       defaultPlacements: [
