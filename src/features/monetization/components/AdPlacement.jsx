@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, Chip, Button, useTheme, alpha } from "@mui/material";
 import { Verified as VerifiedIcon, Security as SecurityIcon, Add as AddIcon } from "@mui/icons-material";
 import { useMonetization } from "../../../context/MonetizationContext";
+import { getCreatorMonetization } from "../services/monetizationService";
 import { getProviderById } from "../providers";
 import ProviderWizardModal from "./ProviderWizardModal";
 
@@ -14,15 +14,37 @@ export const AdPlacement = ({
   placement = "above_article",
   slotId = "",
   isPreview = false,
+  creatorUid = null,
+  authorId = null,
 }) => {
   const theme = useTheme();
-  const { monetizationState } = useMonetization();
+  const { monetizationState: ownMonetizationState } = useMonetization();
+  const [creatorMonetization, setCreatorMonetization] = useState(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const isDark = theme.palette.mode === "dark";
 
-  const isEnabled = isPreview || monetizationState?.placements?.[placement];
-  const activeProviderId = monetizationState?.activeProviderId;
-  const isVerified = isPreview || monetizationState?.status === "verified";
+  const targetUid = creatorUid || authorId;
+
+  useEffect(() => {
+    let isMounted = true;
+    if (targetUid) {
+      getCreatorMonetization(targetUid)
+        .then((data) => {
+          if (isMounted) setCreatorMonetization(data);
+        })
+        .catch(() => {
+          if (isMounted) setCreatorMonetization(null);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUid]);
+
+  const activeMonetization = targetUid ? creatorMonetization : ownMonetizationState;
+  const isEnabled = isPreview || activeMonetization?.placements?.[placement];
+  const activeProviderId = activeMonetization?.activeProviderId;
+  const isVerified = isPreview || activeMonetization?.status === "verified";
   const provider = getProviderById(activeProviderId);
 
   // If no provider connected and not in preview mode, don't display anything to readers
@@ -98,7 +120,7 @@ export const AdPlacement = ({
                 {provider?.name || "Active Ad Unit"} ({placement})
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                Publisher: {monetizationState?.publisherId} · Slot: {slotId || "default_slot"}
+                Publisher: {activeMonetization?.publisherId} · Slot: {slotId || "default_slot"}
               </Typography>
             </Box>
           ) : (
