@@ -91,6 +91,8 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isViewingNote = location.pathname.startsWith("/note/") || location.pathname.startsWith("/public/note/") || location.pathname === "/note/new";
+
   const handleDrawerToggle = () => {
     if (isMobile) {
       setMobileOpen(!mobileOpen);
@@ -519,7 +521,7 @@ const AppLayout = () => {
           display: "flex",
           flexDirection: "column",
           pt: { xs: "calc(56px + env(safe-area-inset-top, 0px) + 8px)", sm: "calc(64px + env(safe-area-inset-top, 0px) + 12px)" },
-          pb: { xs: "calc(112px + env(safe-area-inset-bottom, 0px))", md: 4 },
+          pb: { xs: isViewingNote ? "calc(24px + env(safe-area-inset-bottom, 0px))" : "calc(112px + env(safe-area-inset-bottom, 0px))", md: 4 },
           px: { xs: 1.5, sm: 3, md: 4 },
           width: "100%",
           maxWidth: "100vw",
@@ -602,7 +604,7 @@ const AppLayout = () => {
       </Box>
 
       {/* ─── iOS 18 / HIG INSPIRED FLOATING GLASS BOTTOM NAVIGATION CAPSULE (MOBILE ONLY) ─── */}
-      {isMobile && (
+      {isMobile && !isViewingNote && (
         <Paper
           elevation={0}
           sx={{

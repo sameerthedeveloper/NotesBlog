@@ -102,6 +102,7 @@ function App() {
 
                       <Route path="/unauthorized" element={<UnauthorizedPage />} />
                       <Route path="/note/new" element={<NoteEditorPage />} />
+                      <Route path="/note/:id" element={<NoteEditorPage />} />
                       <Route path="/note/:id/edit" element={<NoteEditorPage />} />
                       <Route path="/profile" element={<ProfilePage />} />
                     </Route>

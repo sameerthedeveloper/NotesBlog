@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { 
   Box, 
   TextField, 
@@ -71,6 +71,7 @@ const LazyTipTapEditor = lazy(() => import("../components/TipTapEditor"));
 export const NoteEditorPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -85,7 +86,8 @@ export const NoteEditorPage = () => {
   
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(!id); // New notes start in edit mode; existing notes start in read mode
+  const isEditRoute = location.pathname.endsWith("/edit");
+  const [isEditing, setIsEditing] = useState(!id || isEditRoute);
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [viewersDialogOpen, setViewersDialogOpen] = useState(false);
@@ -432,26 +434,6 @@ export const NoteEditorPage = () => {
 
           {/* Render Sanitized HTML Content */}
           <ContentRenderer content={content} />
-
-          {/* Floating Mobile Edit Button */}
-          {isMobile && (
-            <Fab
-              color="primary"
-              variant="extended"
-              onClick={() => setIsEditing(true)}
-              sx={{
-                position: "fixed",
-                bottom: 80,
-                right: 20,
-                zIndex: 1250,
-                borderRadius: 4,
-                px: 3,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.25)"
-              }}
-            >
-              <EditIcon sx={{ mr: 1 }} /> Edit Note
-            </Fab>
-          )}
         </Box>
       ) : isMobile ? (
         /* Fullscreen Mobile Editor Dialog */

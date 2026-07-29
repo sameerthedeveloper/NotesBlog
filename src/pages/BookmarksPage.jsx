@@ -69,7 +69,7 @@ export const BookmarksPage = () => {
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={note.id}>
               <NoteCard
                 note={note}
-                onClick={() => navigate(`/note/${note.id}/edit`)}
+                onClick={() => navigate(`/note/${note.id}`)}
                 onDelete={() => handleDelete(note.id)}
                 onToggleFavorite={() => toggleFavorite(note.id, note.isFavorite)}
                 onTogglePin={() => togglePin(note.id, note.isPinned)}
