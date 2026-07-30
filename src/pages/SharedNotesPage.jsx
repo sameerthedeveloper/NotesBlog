@@ -90,9 +90,9 @@ export const SharedNotesPage = () => {
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={note.id}>
               <NoteCard
                 note={note}
-                onClick={() => navigate(`/note/${note.id}`)}
+                onClick={() => navigate(`/public/note/${note.id}`)}
                 onShare={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/note/${note.id}`);
+                  navigator.clipboard.writeText(`${window.location.origin}/public/note/${note.id}`);
                   toast.success("Public note link copied!");
                 }}
               />

@@ -89,7 +89,8 @@ export const NoteCardGrid = ({
             onTogglePin={onTogglePin ? () => onTogglePin(note.id, note.isPinned) : null}
             onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(note.id, note.isFavorite) : null}
             onShare={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/note/${note.id}`);
+              const path = note.visibility === "public" ? `/public/note/${note.id}` : `/note/${note.id}`;
+              navigator.clipboard.writeText(`${window.location.origin}${path}`);
               toast.success("Note link copied to clipboard!");
             }}
           />

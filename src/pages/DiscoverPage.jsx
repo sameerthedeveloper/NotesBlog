@@ -102,13 +102,13 @@ const DiscoverPage = () => {
             <Grid key={note.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
               <NoteCard 
                 note={note} 
-                onClick={() => navigate(`/note/${note.id}`)}
+                onClick={() => navigate(`/public/note/${note.id}`)}
                 onDelete={() => toast.error("You cannot delete public notes.")}
                 onTogglePin={() => handleTogglePin(note.id, note.isPinned)}
                 onToggleFavorite={() => handleToggleFavorite(note.id, note.isFavorite)}
                 onShare={(e) => {
                   if(e) e.stopPropagation();
-                  const publicUrl = `${window.location.origin}/note/${note.id}`;
+                  const publicUrl = `${window.location.origin}/public/note/${note.id}`;
                   navigator.clipboard.writeText(publicUrl);
                   toast.success("Link copied!");
                 }}

@@ -103,6 +103,10 @@ export const NoteEditorPage = () => {
         const note = await getNoteById(id);
         if (note) {
           if (note.authorId !== currentUser.uid) {
+            if (note.visibility === "public") {
+              navigate(`/public/note/${id}`, { replace: true });
+              return;
+            }
             toast.error("You do not have permission to edit this note.");
             navigate("/");
             return;
@@ -194,7 +198,7 @@ export const NoteEditorPage = () => {
       toast.error("Please set note visibility to 'Public' to share it.");
       return;
     }
-    const publicUrl = `${window.location.origin}/note/${id}`;
+    const publicUrl = `${window.location.origin}/public/note/${id}`;
     navigator.clipboard.writeText(publicUrl);
     toast.success("Public note link copied to clipboard!");
   };

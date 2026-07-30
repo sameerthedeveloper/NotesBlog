@@ -562,7 +562,9 @@ export const DashboardPage = () => {
           onClick={() => { 
             handleMenuClose(); 
             if (selectedNoteId) {
-              navigator.clipboard.writeText(`${window.location.origin}/note/${selectedNoteId}`);
+              const selNote = notes.find((n) => n.id === selectedNoteId);
+              const path = selNote?.visibility === "public" ? `/public/note/${selectedNoteId}` : `/note/${selectedNoteId}`;
+              navigator.clipboard.writeText(`${window.location.origin}${path}`);
               toast.success("Link copied!");
             }
           }}

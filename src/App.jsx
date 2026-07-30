@@ -32,6 +32,8 @@ const BookmarksPage = lazy(() => import("./pages/BookmarksPage"));
 const AdminPanelPage = lazy(() => import("./pages/AdminPanelPage"));
 const MonetizationPage = lazy(() => import("./pages/MonetizationPage"));
 
+import ScrollToTopButton from "./components/ScrollToTopButton";
+
 const LoadingFallback = () => (
   <Box 
     sx={{ 
@@ -109,6 +111,7 @@ function App() {
                   </Route>
                 </Routes>
               </Suspense>
+              <ScrollToTopButton />
             </Router>
           </MonetizationProvider>
         </AuthProvider>

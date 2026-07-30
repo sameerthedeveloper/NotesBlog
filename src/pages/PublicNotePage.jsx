@@ -20,7 +20,8 @@ import {
   ArrowBack as BackIcon, 
   ContentCopyOutlined as CopyIcon,
   VisibilityOutlined as ViewIcon,
-  LoginOutlined as LoginIcon
+  LoginOutlined as LoginIcon,
+  EditOutlined as EditIcon
 } from "@mui/icons-material";
 import { subscribeNoteById, incrementViewCount } from "../features/notes/services/notesService";
 import { format } from "date-fns";
@@ -35,7 +36,7 @@ export const PublicNotePage = () => {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const [isNamePromptOpen, setIsNamePromptOpen] = useState(false);
   const [visitorName, setVisitorName] = useState("");
 
@@ -131,6 +132,17 @@ export const PublicNotePage = () => {
           </Button>
 
           <Stack direction="row" spacing={1.5}>
+            {currentUser?.uid === note.authorId && (
+              <Button
+                variant="outlined"
+                component={Link}
+                to={`/note/${note.id}/edit`}
+                startIcon={<EditIcon />}
+                sx={{ borderRadius: 3, fontWeight: 700 }}
+              >
+                Edit Note
+              </Button>
+            )}
             <ExportMenu noteTitle={note.title || "Untitled Document"} htmlContent={note.content} />
             <Button 
               variant="contained" 
@@ -188,13 +200,13 @@ export const PublicNotePage = () => {
             )}
 
             {/* Creator AdPlacement: Above Article */}
-            <AdPlacement placement="above_article" creatorUid={note.userId} />
+            <AdPlacement placement="above_article" creatorUid={note.authorId || note.userId} />
 
             {/* Sanitized HTML Content */}
             <HtmlViewer content={note.content} />
 
             {/* Creator AdPlacement: Below Article */}
-            <AdPlacement placement="below_article" creatorUid={note.userId} />
+            <AdPlacement placement="below_article" creatorUid={note.authorId || note.userId} />
         </Box>
       </Stack>
 
