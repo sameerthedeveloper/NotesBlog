@@ -12,7 +12,14 @@ import {
 } from "@mui/icons-material";
 import NoteCard from "../components/NoteCard";
 import NoteCardSkeleton from "../features/notes/components/NoteCardSkeleton";
-import { subscribePublicNotes, togglePin, toggleFavorite } from "../features/notes/services/notesService";
+import { 
+  subscribePublicNotes, 
+  togglePin, 
+  toggleFavorite,
+  subscribeUserBookmarks,
+  subscribeUserPins
+} from "../features/notes/services/notesService";
+import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 const EmptyState = () => (
@@ -47,34 +54,67 @@ const EmptyState = () => (
 const DiscoverPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   
   const [notes, setNotes] = useState([]);
+  const [userBookmarks, setUserBookmarks] = useState([]);
+  const [userPins, setUserPins] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribePublicNotes((fetchedNotes) => {
+    const unsubPublic = subscribePublicNotes((fetchedNotes) => {
       setNotes(fetchedNotes);
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    let unsubBookmarks = () => {};
+    let unsubPins = () => {};
 
-  const handleTogglePin = async (id, currentStatus) => {
+    if (currentUser?.uid) {
+      unsubBookmarks = subscribeUserBookmarks(currentUser.uid, (bm) => setUserBookmarks(bm));
+      unsubPins = subscribeUserPins(currentUser.uid, (pins) => setUserPins(pins));
+    } else {
+      setUserBookmarks([]);
+      setUserPins([]);
+    }
+
+    return () => {
+      unsubPublic();
+      unsubBookmarks();
+      unsubPins();
+    };
+  }, [currentUser]);
+
+  const bookmarkedSet = new Set(userBookmarks.map((b) => b.id || b.noteId));
+  const pinnedSet = new Set(userPins.map((p) => p.id || p.noteId));
+
+  const handleTogglePin = async (note) => {
+    if (!currentUser) {
+      toast.error("Please login to pin notes.");
+      return;
+    }
+    const currentlyPinned = pinnedSet.has(note.id) || (note.authorId === currentUser.uid && note.isPinned);
     try {
-      await togglePin(id, !currentStatus);
-      toast.success(!currentStatus ? "Pinned" : "Unpinned");
-    } catch {
+      await togglePin(note.id, !currentlyPinned, currentUser.uid, note);
+      toast.success(!currentlyPinned ? "Pinned to your collection" : "Unpinned");
+    } catch (err) {
+      if (import.meta.env.DEV) console.error(err);
       toast.error("Error updating pin");
     }
   };
 
-  const handleToggleFavorite = async (id, currentStatus) => {
+  const handleToggleFavorite = async (note) => {
+    if (!currentUser) {
+      toast.error("Please login to bookmark notes.");
+      return;
+    }
+    const currentlyFav = bookmarkedSet.has(note.id) || (note.authorId === currentUser.uid && note.isFavorite);
     try {
-      await toggleFavorite(id, !currentStatus);
-      toast.success(!currentStatus ? "Added to favorites" : "Removed from favorites");
-    } catch {
-       toast.error("Error updating favorites");
+      await toggleFavorite(note.id, !currentlyFav, currentUser.uid, note);
+      toast.success(!currentlyFav ? "Added to favorites & bookmarks" : "Removed from favorites");
+    } catch (err) {
+      if (import.meta.env.DEV) console.error(err);
+      toast.error("Error updating favorites");
     }
   };
 
@@ -98,23 +138,33 @@ const DiscoverPage = () => {
         <EmptyState />
       ) : (
         <Grid container spacing={3}>
-          {notes.map((note) => (
-            <Grid key={note.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-              <NoteCard 
-                note={note} 
-                onClick={() => navigate(`/public/note/${note.id}`)}
-                onDelete={() => toast.error("You cannot delete public notes.")}
-                onTogglePin={() => handleTogglePin(note.id, note.isPinned)}
-                onToggleFavorite={() => handleToggleFavorite(note.id, note.isFavorite)}
-                onShare={(e) => {
-                  if(e) e.stopPropagation();
-                  const publicUrl = `${window.location.origin}/public/note/${note.id}`;
-                  navigator.clipboard.writeText(publicUrl);
-                  toast.success("Link copied!");
-                }}
-              />
-            </Grid>
-          ))}
+          {notes.map((note) => {
+            const isNoteFav = bookmarkedSet.has(note.id) || (note.authorId === currentUser?.uid && note.isFavorite);
+            const isNotePinned = pinnedSet.has(note.id) || (note.authorId === currentUser?.uid && note.isPinned);
+            const displayNote = {
+              ...note,
+              isFavorite: isNoteFav,
+              isPinned: isNotePinned
+            };
+
+            return (
+              <Grid key={note.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                <NoteCard 
+                  note={displayNote} 
+                  onClick={() => navigate(`/public/note/${note.id}`)}
+                  onDelete={() => toast.error("You cannot delete public notes.")}
+                  onTogglePin={() => handleTogglePin(note)}
+                  onToggleFavorite={() => handleToggleFavorite(note)}
+                  onShare={(e) => {
+                    if (e) e.stopPropagation();
+                    const publicUrl = `${window.location.origin}/public/note/${note.id}`;
+                    navigator.clipboard.writeText(publicUrl);
+                    toast.success("Link copied!");
+                  }}
+                />
+              </Grid>
+            );
+          })}
         </Grid>
       )}
     </Box>

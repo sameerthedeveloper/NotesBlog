@@ -1,6 +1,7 @@
 import { 
   db,
-  storage
+  storage,
+  auth
 } from "../../../firebase/config";
 import { 
   collection, 
@@ -29,67 +30,211 @@ const USERS_COLLECTION = "users";
 
 // --- Users ---
 
-export const createUserProfile = async (uid, userData) => {
-  await updateDoc(doc(db, USERS_COLLECTION, uid), {
-    ...userData,
+export const createUserProfile = async (user, additionalData = {}) => {
+  if (!user) return;
+  const userRef = doc(db, USERS_COLLECTION, user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    const { email, displayName, photoURL } = user;
+    const createdAt = serverTimestamp();
+
+    try {
+      await setDoc(userRef, {
+        displayName: displayName || email.split("@")[0],
+        email,
+        photoURL: photoURL || "",
+        createdAt,
+        updatedAt: createdAt,
+        hasCompletedOnboarding: false,
+        bio: "",
+        role: "user",
+        ...additionalData
+      });
+    } catch (error) {
+      console.error("Error creating user profile", error);
+    }
+  }
+  return getUserProfile(user.uid);
+};
+
+export const getUserProfile = async (uid) => {
+  if (!uid) return null;
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  const userSnap = await getDoc(userRef);
+  return userSnap.exists() ? { uid: userSnap.id, ...userSnap.data() } : null;
+};
+
+export const updateUserProfile = async (uid, data) => {
+  if (!uid) return;
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  await updateDoc(userRef, {
+    ...data,
     updatedAt: serverTimestamp()
   });
 };
 
-export const getUserProfile = async (uid) => {
-  const userDoc = await getDoc(doc(db, USERS_COLLECTION, uid));
-  return userDoc.exists() ? userDoc.data() : null;
-};
-
-export const updateOnboardingStatus = async (uid, hasCompleted) => {
-  await updateDoc(doc(db, USERS_COLLECTION, uid), {
-    hasCompletedOnboarding: hasCompleted,
+export const updateOnboardingStatus = async (uid, completed = true) => {
+  if (!uid) return;
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  await updateDoc(userRef, {
+    hasCompletedOnboarding: completed,
     updatedAt: serverTimestamp()
   });
 };
 
 // --- Notes ---
 
-export const createNote = async (noteData) => {
-  const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
-    ...noteData,
-    isPinned: false,
-    isFavorite: false,
+export const createNote = async (userId, noteData) => {
+  return await addDoc(collection(db, NOTES_COLLECTION), {
+    authorId: userId,
+    title: noteData.title || "Untitled Note",
+    content: noteData.content || "",
+    isMigratedToHtml: true,
+    tags: noteData.tags || [],
+    visibility: noteData.visibility || "private",
+    isPinned: noteData.isPinned || false,
+    isFavorite: noteData.isFavorite || false,
     viewCount: 0,
-    versions: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
-  return docRef.id;
 };
 
-export const updateNote = async (noteId, noteData, options = {}) => {
+export const updateNote = async (noteId, noteData) => {
   const docRef = doc(db, NOTES_COLLECTION, noteId);
-  
-  if (options.saveVersion && noteData.content) {
-    const noteSnap = await getDoc(docRef);
-    const oldContent = noteSnap.data()?.content;
-    if (oldContent && oldContent !== noteData.content) {
-      const currentVersions = noteSnap.data()?.versions || [];
-      const newVersions = [oldContent, ...currentVersions].slice(0, 3);
-      noteData.versions = newVersions;
-    }
-  }
-
   await updateDoc(docRef, {
     ...noteData,
     updatedAt: serverTimestamp()
   });
 };
 
-export const togglePin = async (noteId, isPinned) => {
-  const docRef = doc(db, NOTES_COLLECTION, noteId);
-  await updateDoc(docRef, { isPinned });
+export const togglePin = async (noteId, isPinned, userId = null, noteData = null) => {
+  const uid = userId || auth?.currentUser?.uid;
+  if (!uid) throw new Error("Authentication required to pin notes.");
+
+  const userPinRef = doc(db, USERS_COLLECTION, uid, "pins", noteId);
+  if (isPinned) {
+    const pinPayload = {
+      noteId,
+      isPinned: true,
+      updatedAt: serverTimestamp(),
+      ...(noteData ? {
+        title: noteData.title || "Untitled Note",
+        content: noteData.content || "",
+        authorId: noteData.authorId || "",
+        authorName: noteData.authorName || noteData.authorDisplayName || "Anonymous",
+        visibility: noteData.visibility || "public",
+        tags: noteData.tags || [],
+      } : {})
+    };
+    await setDoc(userPinRef, pinPayload, { merge: true });
+  } else {
+    try {
+      await deleteDoc(userPinRef);
+    } catch {
+      // Ignore if document didn't exist
+    }
+  }
+
+  if (!noteData || noteData.authorId === uid) {
+    try {
+      const mainDocRef = doc(db, NOTES_COLLECTION, noteId);
+      await updateDoc(mainDocRef, { isPinned });
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("Non-author pin stored locally in user profile", err);
+      }
+    }
+  }
 };
 
-export const toggleFavorite = async (noteId, isFavorite) => {
-  const docRef = doc(db, NOTES_COLLECTION, noteId);
-  await updateDoc(docRef, { isFavorite });
+export const toggleFavorite = async (noteId, isFavorite, userId = null, noteData = null) => {
+  const uid = userId || auth?.currentUser?.uid;
+  if (!uid) throw new Error("Authentication required to bookmark notes.");
+
+  const userBookmarkRef = doc(db, USERS_COLLECTION, uid, "bookmarks", noteId);
+  if (isFavorite) {
+    const bookmarkPayload = {
+      noteId,
+      isFavorite: true,
+      updatedAt: serverTimestamp(),
+      ...(noteData ? {
+        title: noteData.title || "Untitled Note",
+        content: noteData.content || "",
+        authorId: noteData.authorId || "",
+        authorName: noteData.authorName || noteData.authorDisplayName || "Anonymous",
+        visibility: noteData.visibility || "public",
+        tags: noteData.tags || [],
+      } : {})
+    };
+    await setDoc(userBookmarkRef, bookmarkPayload, { merge: true });
+  } else {
+    try {
+      await deleteDoc(userBookmarkRef);
+    } catch {
+      // Ignore if document didn't exist
+    }
+  }
+
+  if (!noteData || noteData.authorId === uid) {
+    try {
+      const mainDocRef = doc(db, NOTES_COLLECTION, noteId);
+      await updateDoc(mainDocRef, { isFavorite });
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("Non-author favorite stored locally in user profile", err);
+      }
+    }
+  }
+};
+
+export const subscribeUserBookmarks = (userId, callback) => {
+  if (!userId) {
+    callback([]);
+    return () => {};
+  }
+  const bookmarksRef = collection(db, USERS_COLLECTION, userId, "bookmarks");
+  return onSnapshot(
+    bookmarksRef,
+    (snapshot) => {
+      const bookmarks = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data()
+      }));
+      callback(bookmarks);
+    },
+    (error) => {
+      if (import.meta.env.DEV) {
+        console.warn("subscribeUserBookmarks error:", error);
+      }
+      callback([]);
+    }
+  );
+};
+
+export const subscribeUserPins = (userId, callback) => {
+  if (!userId) {
+    callback([]);
+    return () => {};
+  }
+  const pinsRef = collection(db, USERS_COLLECTION, userId, "pins");
+  return onSnapshot(
+    pinsRef,
+    (snapshot) => {
+      const pins = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data()
+      }));
+      callback(pins);
+    },
+    (error) => {
+      if (import.meta.env.DEV) {
+        console.warn("subscribeUserPins error:", error);
+      }
+      callback([]);
+    }
+  );
 };
 
 export const incrementViewCount = async (noteId, viewerInfo = null) => {
