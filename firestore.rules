@@ -65,6 +65,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
+
+    // --- Platform Secrets (Super Admin Only - API Keys, Secrets) ---
+    match /platformSecrets/{secretDoc} {
+      allow read, write: if isSuperAdmin();
+    }
     
     // --- Global Access Denied by Default (Super Admin Backup Exception) ---
     match /{document=**} {

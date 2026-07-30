@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { db } from "../firebase/config";
 import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 
+const CACHE_KEY = "opennotes_platform_settings_v1";
+
 const defaultPlatformSettings = {
   general: {
     platformName: "OpenNotes",
@@ -55,6 +57,28 @@ const defaultPlatformSettings = {
   },
 };
 
+const getInitialSettings = () => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return {
+        ...defaultPlatformSettings,
+        ...parsed,
+        general: { ...defaultPlatformSettings.general, ...(parsed.general || {}) },
+        advertisements: { ...defaultPlatformSettings.advertisements, ...(parsed.advertisements || {}) },
+        creatorMonetization: { ...defaultPlatformSettings.creatorMonetization, ...(parsed.creatorMonetization || {}) },
+        community: { ...defaultPlatformSettings.community, ...(parsed.community || {}) },
+        ai: { ...defaultPlatformSettings.ai, ...(parsed.ai || {}) },
+        offline: { ...defaultPlatformSettings.offline, ...(parsed.offline || {}) },
+      };
+    }
+  } catch {
+    // Ignore cache parsing errors
+  }
+  return defaultPlatformSettings;
+};
+
 const PlatformSettingsContext = createContext({
   settings: defaultPlatformSettings,
   loading: true,
@@ -62,32 +86,50 @@ const PlatformSettingsContext = createContext({
 });
 
 export const PlatformSettingsProvider = ({ children }) => {
-  const [settings, setSettings] = useState(defaultPlatformSettings);
+  const [settings, setSettings] = useState(getInitialSettings);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const docRef = doc(db, "platformSettings", "global");
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setSettings((prev) => ({
-            ...prev,
-            ...docSnap.data(),
-          }));
-        } else {
-          // Initialize document with defaults if missing
-          setDoc(docRef, { ...defaultPlatformSettings, updatedAt: serverTimestamp() }).catch(() => {});
-        }
-        setLoading(false);
-      },
-      (error) => {
-        console.warn("PlatformSettings listener error:", error);
-        setLoading(false);
-      }
-    );
+    let unsubscribe = () => {};
 
-    return () => unsubscribe();
+    try {
+      const docRef = doc(db, "platformSettings", "global");
+      unsubscribe = onSnapshot(
+        docRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setSettings((prev) => {
+              const updated = { ...prev, ...data };
+              try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+              } catch {
+                // Ignore storage errors
+              }
+              return updated;
+            });
+          }
+          setLoading(false);
+        },
+        (error) => {
+          if (import.meta.env.DEV) {
+            console.warn("PlatformSettings listener caught non-fatal error:", error);
+          }
+          setLoading(false);
+        }
+      );
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("Failed to initialize PlatformSettings listener:", err);
+      }
+      setLoading(false);
+    }
+
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const updateSetting = async (section, key, value) => {
@@ -101,8 +143,20 @@ export const PlatformSettingsProvider = ({ children }) => {
     };
 
     setSettings(updated);
-    const docRef = doc(db, "platformSettings", "global");
-    await setDoc(docRef, updated, { merge: true });
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignore storage errors
+    }
+
+    try {
+      const docRef = doc(db, "platformSettings", "global");
+      await setDoc(docRef, updated, { merge: true });
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("PlatformSettings update error:", err);
+      }
+    }
   };
 
   return (
@@ -113,3 +167,4 @@ export const PlatformSettingsProvider = ({ children }) => {
 };
 
 export const usePlatformSettings = () => useContext(PlatformSettingsContext);
+

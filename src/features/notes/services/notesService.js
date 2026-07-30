@@ -124,26 +124,44 @@ export const incrementViewCount = async (noteId, viewerInfo = null) => {
 
 export const subscribeNoteById = (noteId, callback) => {
   const docRef = doc(db, NOTES_COLLECTION, noteId);
-  return onSnapshot(docRef, (docSnap) => {
-    if (docSnap.exists()) {
-      callback({ id: docSnap.id, ...docSnap.data() });
-    } else {
+  return onSnapshot(
+    docRef, 
+    (docSnap) => {
+      if (docSnap.exists()) {
+        callback({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      if (import.meta.env.DEV) {
+        console.warn("subscribeNoteById error:", error);
+      }
       callback(null);
     }
-  });
+  );
 };
 
 export const subscribeNoteViews = (noteId, callback) => {
   const viewsRef = collection(db, NOTES_COLLECTION, noteId, "views");
   const q = query(viewsRef, orderBy("lastViewedAt", "desc"), limit(100));
   
-  return onSnapshot(q, (snapshot) => {
-    const views = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-    callback(views);
-  });
+  return onSnapshot(
+    q, 
+    (snapshot) => {
+      const views = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      }));
+      callback(views);
+    },
+    (error) => {
+      if (import.meta.env.DEV) {
+        console.warn("subscribeNoteViews error:", error);
+      }
+      callback([]);
+    }
+  );
 };
 
 export const deleteNote = async (noteId) => {
@@ -167,19 +185,26 @@ export const subscribeUserNotes = (userId, options = {}, callback) => {
     limit(pageSize)
   );
   
-  return onSnapshot(q, (snapshot) => {
-    const notes = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-    callback(notes);
-  }, (error) => {
-    if (error.code === 'failed-precondition') {
-      console.error("Firestore Index Missing for user query");
-    } else {
-      console.error("Firestore Error:", error);
+  return onSnapshot(
+    q, 
+    (snapshot) => {
+      const notes = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      }));
+      callback(notes);
+    }, 
+    (error) => {
+      if (import.meta.env.DEV) {
+        if (error.code === 'failed-precondition') {
+          console.warn("Firestore Index Missing for user query");
+        } else {
+          console.warn("Firestore User Notes Error:", error);
+        }
+      }
+      callback([]);
     }
-  });
+  );
 };
 
 export const subscribePublicNotes = (callback) => {
@@ -189,13 +214,22 @@ export const subscribePublicNotes = (callback) => {
     orderBy("updatedAt", "desc")
   );
   
-  return onSnapshot(q, (snapshot) => {
-    const notes = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-    callback(notes);
-  });
+  return onSnapshot(
+    q, 
+    (snapshot) => {
+      const notes = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      }));
+      callback(notes);
+    },
+    (error) => {
+      if (import.meta.env.DEV) {
+        console.warn("subscribePublicNotes error:", error);
+      }
+      callback([]);
+    }
+  );
 };
 
 export const uploadFileAttachment = async (userId, file) => {
