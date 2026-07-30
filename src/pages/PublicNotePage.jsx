@@ -30,6 +30,7 @@ import { useAuth } from "../context/AuthContext";
 import HtmlViewer from "../components/HtmlViewer";
 import ExportMenu from "../components/ExportMenu";
 import AdPlacement from "../features/monetization/components/AdPlacement";
+import NoteDiscussionForum from "../features/discussions/components/NoteDiscussionForum";
 
 export const PublicNotePage = () => {
   const { id } = useParams();
@@ -207,6 +208,9 @@ export const PublicNotePage = () => {
 
             {/* Creator AdPlacement: Below Article */}
             <AdPlacement placement="below_article" creatorUid={note.authorId || note.userId} />
+
+            {/* Collaborative Knowledge Hub: Note Discussion Forum */}
+            <NoteDiscussionForum noteId={note.id} noteAuthorId={note.authorId} />
         </Box>
       </Stack>
 

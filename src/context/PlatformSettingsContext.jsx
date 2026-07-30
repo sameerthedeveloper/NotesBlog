@@ -55,6 +55,12 @@ const defaultPlatformSettings = {
     offlineReading: true,
     backgroundSync: true,
   },
+  discussions: {
+    enableDiscussions: true,
+    allowGuestReading: true,
+    threadedReplies: true,
+    maxDepth: 10,
+  },
 };
 
 const getInitialSettings = () => {
@@ -71,6 +77,7 @@ const getInitialSettings = () => {
         community: { ...defaultPlatformSettings.community, ...(parsed.community || {}) },
         ai: { ...defaultPlatformSettings.ai, ...(parsed.ai || {}) },
         offline: { ...defaultPlatformSettings.offline, ...(parsed.offline || {}) },
+        discussions: { ...defaultPlatformSettings.discussions, ...(parsed.discussions || {}) },
       };
     }
   } catch {

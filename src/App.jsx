@@ -29,6 +29,7 @@ const SearchPage = lazy(() => import("./pages/SearchPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SharedNotesPage = lazy(() => import("./pages/SharedNotesPage"));
 const BookmarksPage = lazy(() => import("./pages/BookmarksPage"));
+const CommunityPage = lazy(() => import("./pages/CommunityPage"));
 const AdminPanelPage = lazy(() => import("./pages/AdminPanelPage"));
 const MonetizationPage = lazy(() => import("./pages/MonetizationPage"));
 
@@ -86,6 +87,7 @@ function App() {
                       <Route path="/dashboard" element={<Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense>} />
                       <Route path="/notes" element={<Suspense fallback={<PageSkeleton />}><NotesPage /></Suspense>} />
                       <Route path="/discover" element={<Suspense fallback={<PageSkeleton />}><DiscoverPage /></Suspense>} />
+                      <Route path="/community" element={<Suspense fallback={<PageSkeleton />}><CommunityPage /></Suspense>} />
                       <Route path="/shared" element={<Suspense fallback={<PageSkeleton />}><SharedNotesPage /></Suspense>} />
                       <Route path="/bookmarks" element={<Suspense fallback={<PageSkeleton />}><BookmarksPage /></Suspense>} />
                       <Route path="/monetization" element={<Suspense fallback={<PageSkeleton />}><MonetizationPage /></Suspense>} />

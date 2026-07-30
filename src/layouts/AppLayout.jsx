@@ -60,7 +60,8 @@ import {
   BookmarkOutlined as BookmarkIcon,
   AutoAwesome as SparklesIcon,
   MonetizationOnOutlined as MonetizationIcon,
-  HelpOutlineOutlined as HelpIcon
+  HelpOutlineOutlined as HelpIcon,
+  ForumOutlined as ForumIcon
 } from "@mui/icons-material";
 import PromptBuilderModal from "../components/PromptBuilderModal";
 import OnboardingWizardModal from "../components/OnboardingWizardModal";
@@ -117,6 +118,7 @@ const AppLayout = () => {
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "My Notes", icon: <NotesIcon />, path: "/notes" },
     { text: "Discover", icon: <ExploreIcon />, path: "/discover" },
+    { text: "Community", icon: <ForumIcon />, path: "/community" },
     { text: "Shared Notes", icon: <ShareIcon />, path: "/shared" },
     { text: "Bookmarks", icon: <BookmarkIcon />, path: "/bookmarks" },
     ...(settings?.creatorMonetization?.enableCreatorMonetization !== false
