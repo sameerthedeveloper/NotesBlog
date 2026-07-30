@@ -14,6 +14,7 @@ import {
   Code,
   Print
 } from "@mui/icons-material";
+import { generatePdfFromNote, printNoteHtml } from "../utils/pdfExportService";
 
 export const ExportMenu = ({ noteTitle = "Untitled Note", htmlContent = "" }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -23,50 +24,24 @@ export const ExportMenu = ({ noteTitle = "Untitled Note", htmlContent = "" }) =>
 
   // --- Export Actions ---
 
-  const exportAsPrintOrPdf = () => {
+  const handleExportPdf = async () => {
     handleClose();
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    await generatePdfFromNote(noteTitle, htmlContent);
+  };
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${noteTitle}</title>
-          <style>
-            body { font-family: 'Outfit', 'Inter', sans-serif; margin: 40px; color: #111; line-height: 1.75; }
-            .opennotes-content { max-width: 900px; margin: 0 auto; }
-            h1 { font-size: 28px; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 8px; font-weight: 800; }
-            img { max-width: 100%; height: auto; border-radius: 8px; }
-            pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            blockquote { border-left: 4px solid #0B57D0; background: #f9f9f9; padding: 10px 16px; margin: 16px 0; font-style: italic; }
-          </style>
-        </head>
-        <body>
-          <div class="opennotes-content">
-            <h1>${noteTitle}</h1>
-            <div>${htmlContent}</div>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
+  const handlePrint = () => {
+    handleClose();
+    printNoteHtml(noteTitle, htmlContent);
   };
 
   const exportAsHtmlFile = () => {
     handleClose();
-    const fullHtml = `<!DOCTYPE html>\n<html>\n<head>\n<title>${noteTitle}</title>\n</head>\n<body>\n<h1>${noteTitle}</h1>\n${htmlContent}\n</body>\n</html>`;
+    const fullHtml = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset="utf-8">\n<title>${noteTitle}</title>\n<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:40px;line-height:1.6;color:#1e293b;}h1{border-bottom:2px solid #2563eb;padding-bottom:10px;color:#0f172a;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #cbd5e1;padding:8px;}th{background:#f1f5f9;}blockquote{border-left:4px solid #2563eb;background:#f8fafc;padding:10px 16px;}</style>\n</head>\n<body>\n<h1>${noteTitle}</h1>\n<div>${htmlContent}</div>\n</body>\n</html>`;
     const blob = new Blob([fullHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.html`;
+    link.download = `${(noteTitle || "note").replace(/[^a-z0-9]/gi, "_").toLowerCase()}.html`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -83,7 +58,7 @@ export const ExportMenu = ({ noteTitle = "Untitled Note", htmlContent = "" }) =>
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.doc`;
+    link.download = `${(noteTitle || "note").replace(/[^a-z0-9]/gi, "_").toLowerCase()}.doc`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -103,11 +78,11 @@ export const ExportMenu = ({ noteTitle = "Untitled Note", htmlContent = "" }) =>
       </Tooltip>
 
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <MenuItem onClick={exportAsPrintOrPdf}>
+        <MenuItem onClick={handleExportPdf}>
           <ListItemIcon>
             <PictureAsPdf fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText primary="Export as PDF / Print" />
+          <ListItemText primary="Export as PDF" secondary="Vector/Canvas PDF file" />
         </MenuItem>
 
         <MenuItem onClick={exportAsDocx}>
@@ -124,7 +99,7 @@ export const ExportMenu = ({ noteTitle = "Untitled Note", htmlContent = "" }) =>
           <ListItemText primary="Export as HTML File" />
         </MenuItem>
 
-        <MenuItem onClick={exportAsPrintOrPdf}>
+        <MenuItem onClick={handlePrint}>
           <ListItemIcon>
             <Print fontSize="small" color="action" />
           </ListItemIcon>
