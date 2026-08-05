@@ -85,28 +85,69 @@ export const updateOnboardingStatus = async (uid, completed = true) => {
 
 // --- Notes ---
 
-export const createNote = async (userId, noteData) => {
-  return await addDoc(collection(db, NOTES_COLLECTION), {
-    authorId: userId,
-    title: noteData.title || "Untitled Note",
-    content: noteData.content || "",
+export const createNote = async (userIdOrData, noteData) => {
+  let uid;
+  let data;
+
+  if (typeof userIdOrData === "object" && userIdOrData !== null) {
+    data = userIdOrData;
+    uid = data.authorId || auth?.currentUser?.uid;
+  } else {
+    uid = userIdOrData || noteData?.authorId || auth?.currentUser?.uid;
+    data = noteData || {};
+  }
+
+  if (!uid) {
+    throw new Error("Authentication required to create a note.");
+  }
+
+  const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
+    authorId: uid,
+    title: data.title || "Untitled Note",
+    content: data.content || "",
     isMigratedToHtml: true,
-    tags: noteData.tags || [],
-    visibility: noteData.visibility || "private",
-    isPinned: noteData.isPinned || false,
-    isFavorite: noteData.isFavorite || false,
+    tags: data.tags || [],
+    visibility: data.visibility || "private",
+    isPinned: data.isPinned || false,
+    isFavorite: data.isFavorite || false,
     viewCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
+
+  return docRef.id;
 };
 
-export const updateNote = async (noteId, noteData) => {
+export const updateNote = async (noteId, noteData, options = {}) => {
+  if (!noteId) throw new Error("Missing noteId for update");
   const docRef = doc(db, NOTES_COLLECTION, noteId);
-  await updateDoc(docRef, {
+
+  const updatePayload = {
     ...noteData,
     updatedAt: serverTimestamp()
-  });
+  };
+
+  if (options?.saveVersion) {
+    try {
+      const currentSnap = await getDoc(docRef);
+      if (currentSnap.exists()) {
+        const currentData = currentSnap.data();
+        const existingVersions = currentData.versions || [];
+        const newVersion = {
+          title: currentData.title || "Untitled Note",
+          content: currentData.content || "",
+          timestamp: new Date().toISOString()
+        };
+        updatePayload.versions = [newVersion, ...existingVersions.filter(v => typeof v === "object")].slice(0, 10);
+      }
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn("Non-critical: Version history backup omitted on update", err);
+      }
+    }
+  }
+
+  await updateDoc(docRef, updatePayload);
 };
 
 export const togglePin = async (noteId, isPinned, userId = null, noteData = null) => {

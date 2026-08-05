@@ -162,6 +162,11 @@ export const NoteEditorPage = () => {
 
   // Save handler
   const handleSaveContent = async (updatedHtml = content) => {
+    if (!currentUser?.uid) {
+      toast.error("You must be signed in to save notes.");
+      return;
+    }
+
     setSaving(true);
     const noteData = {
       title: title || "Untitled Note",
@@ -182,11 +187,12 @@ export const NoteEditorPage = () => {
           setIsEditing(false);
         }
       } else {
-        const newId = await createNote(noteData);
+        const newId = await createNote(currentUser.uid, noteData);
         toast.success("Note created!");
         navigate(`/note/${newId}`, { replace: true });
       }
-    } catch {
+    } catch (error) {
+      console.error("Save note error:", error);
       toast.error("Failed to save note to Firestore");
     } finally {
       setSaving(false);
