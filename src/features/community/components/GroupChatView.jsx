@@ -35,9 +35,11 @@ import {
 } from "../services/communityService";
 import toast from "react-hot-toast";
 
-const GroupChatView = ({ currentUser, userProfile }) => {
+const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
   const [rooms, setRooms] = useState(DEFAULT_CHAT_ROOMS);
-  const [selectedRoom, setSelectedRoom] = useState(DEFAULT_CHAT_ROOMS[0]);
+  const [selectedRoom, setSelectedRoom] = useState(
+    DEFAULT_CHAT_ROOMS.find((r) => r.id === initialRoomId) || DEFAULT_CHAT_ROOMS[0]
+  );
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +49,14 @@ const GroupChatView = ({ currentUser, userProfile }) => {
   const [sending, setSending] = useState(false);
 
   const messagesEndRef = useRef(null);
+
+  // Sync selectedRoom if initialRoomId prop changes
+  useEffect(() => {
+    if (initialRoomId) {
+      const match = rooms.find((r) => r.id === initialRoomId);
+      if (match) setSelectedRoom(match);
+    }
+  }, [initialRoomId, rooms]);
 
   // Subscribe to room list
   useEffect(() => {

@@ -67,15 +67,17 @@ export const subscribeChatMessages = (roomId, callback) => {
     return () => {};
   }
 
-  const q = query(
+  const primaryQuery = query(
     collection(db, CHAT_MESSAGES_COLLECTION),
     where("roomId", "==", roomId),
     orderBy("createdAt", "asc"),
     limit(150)
   );
 
-  return onSnapshot(
-    q,
+  let unsubFallback = null;
+
+  const unsubPrimary = onSnapshot(
+    primaryQuery,
     (snapshot) => {
       const messages = snapshot.docs.map((d) => ({
         id: d.id,
@@ -85,11 +87,39 @@ export const subscribeChatMessages = (roomId, callback) => {
     },
     (error) => {
       if (import.meta.env.DEV) {
-        console.warn("subscribeChatMessages error:", error);
+        console.warn("subscribeChatMessages primary query error (falling back to memory sort):", error);
       }
-      callback([]);
+      const fallbackQuery = query(
+        collection(db, CHAT_MESSAGES_COLLECTION),
+        where("roomId", "==", roomId),
+        limit(150)
+      );
+      unsubFallback = onSnapshot(
+        fallbackQuery,
+        (snapshot) => {
+          const messages = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data()
+          }));
+          messages.sort((a, b) => {
+            const tA = a.createdAt?.seconds || a.createdAt?.toMillis?.() || 0;
+            const tB = b.createdAt?.seconds || b.createdAt?.toMillis?.() || 0;
+            return tA - tB;
+          });
+          callback(messages);
+        },
+        (fallbackErr) => {
+          if (import.meta.env.DEV) console.error("subscribeChatMessages fallback error:", fallbackErr);
+          callback([]);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubPrimary();
+    if (unsubFallback) unsubFallback();
+  };
 };
 
 /**
@@ -139,20 +169,56 @@ export const subscribeGlobalForums = (category = "all", callback) => {
     );
   }
 
-  return onSnapshot(
+  const sortTopics = (list) => {
+    return list.sort((a, b) => {
+      if (!!a.isPinned !== !!b.isPinned) return a.isPinned ? -1 : 1;
+      const tA = a.updatedAt?.seconds || 0;
+      const tB = b.updatedAt?.seconds || 0;
+      return tB - tA;
+    });
+  };
+
+  let unsubFallback = null;
+
+  const unsubPrimary = onSnapshot(
     q,
     (snapshot) => {
       const topics = snapshot.docs.map((d) => ({
         id: d.id,
         ...d.data()
       }));
-      callback(topics);
+      callback(sortTopics(topics));
     },
     (error) => {
       if (import.meta.env.DEV) {
-        console.warn("subscribeGlobalForums error:", error);
+        console.warn("subscribeGlobalForums primary query error (falling back to memory sort):", error);
       }
-      callback([]);
+      const fallbackQuery = query(
+        collection(db, DISCUSSION_TOPICS_COLLECTION),
+        limit(100)
+      );
+      unsubFallback = onSnapshot(
+        fallbackQuery,
+        (snapshot) => {
+          let topics = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data()
+          }));
+          if (category && category !== "all") {
+            topics = topics.filter((t) => t.category === category);
+          }
+          callback(sortTopics(topics));
+        },
+        (fallbackErr) => {
+          if (import.meta.env.DEV) console.error("subscribeGlobalForums fallback error:", fallbackErr);
+          callback([]);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubPrimary();
+    if (unsubFallback) unsubFallback();
+  };
 };

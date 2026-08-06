@@ -29,15 +29,17 @@ export const subscribeTopics = (noteId, callback) => {
     return () => {};
   }
 
-  const q = query(
+  const primaryQuery = query(
     collection(db, TOPICS_COLLECTION),
     where("noteId", "==", noteId),
     orderBy("isPinned", "desc"),
     orderBy("updatedAt", "desc")
   );
 
-  return onSnapshot(
-    q,
+  let unsubFallback = null;
+
+  const unsubPrimary = onSnapshot(
+    primaryQuery,
     (snapshot) => {
       const topics = snapshot.docs.map((d) => ({
         id: d.id,
@@ -47,11 +49,39 @@ export const subscribeTopics = (noteId, callback) => {
     },
     (error) => {
       if (import.meta.env.DEV) {
-        console.warn("subscribeTopics listener error:", error);
+        console.warn("subscribeTopics primary query error (falling back to memory sort):", error);
       }
-      callback([]);
+      const fallbackQuery = query(
+        collection(db, TOPICS_COLLECTION),
+        where("noteId", "==", noteId)
+      );
+      unsubFallback = onSnapshot(
+        fallbackQuery,
+        (snapshot) => {
+          const topics = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data()
+          }));
+          topics.sort((a, b) => {
+            if (!!a.isPinned !== !!b.isPinned) return a.isPinned ? -1 : 1;
+            const tA = a.updatedAt?.seconds || 0;
+            const tB = b.updatedAt?.seconds || 0;
+            return tB - tA;
+          });
+          callback(topics);
+        },
+        (fallbackErr) => {
+          if (import.meta.env.DEV) console.error("subscribeTopics fallback error:", fallbackErr);
+          callback([]);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubPrimary();
+    if (unsubFallback) unsubFallback();
+  };
 };
 
 /**
@@ -146,15 +176,17 @@ export const createTopic = async (noteId, topicData, userProfile, noteAuthorId) 
 
   const docRef = await addDoc(collection(db, TOPICS_COLLECTION), payload);
 
-  // Increment discussion count on main note document
-  try {
-    const noteRef = doc(db, NOTES_COLLECTION, noteId);
-    await updateDoc(noteRef, {
-      discussionCount: increment(1),
-      lastDiscussionActivity: serverTimestamp()
-    });
-  } catch {
-    // Non-fatal if note update fails
+  // Increment discussion count on main note document (if it's a note topic, not global community)
+  if (noteId && noteId !== "global_community") {
+    try {
+      const noteRef = doc(db, NOTES_COLLECTION, noteId);
+      await updateDoc(noteRef, {
+        discussionCount: increment(1),
+        lastDiscussionActivity: serverTimestamp()
+      });
+    } catch {
+      // Non-fatal if note update fails
+    }
   }
 
   return docRef.id;

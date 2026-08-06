@@ -46,6 +46,7 @@ import toast from "react-hot-toast";
 
 const STUDY_GROUPS = [
   {
+    id: "computer-science",
     title: "Computer Science & Software Engineering",
     description: "Collaborative study group for data structures, algorithms, system design, and web dev.",
     icon: <CodeIcon color="primary" sx={{ fontSize: 36 }} />,
@@ -53,6 +54,7 @@ const STUDY_GROUPS = [
     tag: "CS & Tech"
   },
   {
+    id: "ai-learning",
     title: "AI, Machine Learning & Data Science",
     description: "Explore neural networks, LLM prompting, Python notes, and predictive modeling.",
     icon: <AIIcon color="secondary" sx={{ fontSize: 36 }} />,
@@ -60,6 +62,7 @@ const STUDY_GROUPS = [
     tag: "AI & ML"
   },
   {
+    id: "study-lounge",
     title: "Mathematics, Physics & Sciences",
     description: "Calculus, linear algebra, physics formulas, and latex note sharing.",
     icon: <SchoolIcon color="success" sx={{ fontSize: 36 }} />,
@@ -71,6 +74,7 @@ const STUDY_GROUPS = [
 export const CommunityPage = () => {
   const { currentUser, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [chatRoomId, setChatRoomId] = useState(null);
 
   // Global Forums State
   const [topics, setTopics] = useState([]);
@@ -317,7 +321,7 @@ export const CommunityPage = () => {
 
       {/* Tab 2: Open Group Chat */}
       {activeTab === 1 && (
-        <GroupChatView currentUser={currentUser} userProfile={userProfile} />
+        <GroupChatView currentUser={currentUser} userProfile={userProfile} initialRoomId={chatRoomId} />
       )}
 
       {/* Tab 3: Study Communities */}
@@ -347,7 +351,10 @@ export const CommunityPage = () => {
                   </Typography>
                   <Button
                     variant="contained"
-                    onClick={() => setActiveTab(1)}
+                    onClick={() => {
+                      setChatRoomId(group.id);
+                      setActiveTab(1);
+                    }}
                     sx={{ borderRadius: 2.5, fontWeight: 700 }}
                   >
                     Join Chat
