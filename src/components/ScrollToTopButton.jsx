@@ -1,9 +1,16 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
-import { Fab, Zoom, Tooltip, useTheme } from "@mui/material";
-import { KeyboardArrowUp as KeyboardArrowUpIcon } from "@mui/icons-material";
+import { ArrowUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export const ScrollToTopButton = () => {
-  const theme = useTheme();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -24,43 +31,29 @@ export const ScrollToTopButton = () => {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth"
+      behavior: "smooth",
     });
   };
 
   return (
-    <Zoom in={visible}>
-      <Tooltip title="Go to top" placement="left">
-        <Fab
-          color="primary"
-          size="medium"
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          size="icon"
           aria-label="scroll back to top"
           onClick={scrollToTop}
-          sx={{
-            position: "fixed",
-            bottom: { xs: 88, sm: 32 },
-            right: { xs: 20, sm: 32 },
-            zIndex: 1350,
-            fontWeight: 700,
-            boxShadow: theme.palette.mode === "dark" 
-              ? "0 8px 28px rgba(0,0,0,0.6)" 
-              : "0 8px 28px rgba(11,87,208,0.35)",
-            transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              transform: "translateY(-4px) scale(1.08)",
-              boxShadow: theme.palette.mode === "dark"
-                ? "0 12px 36px rgba(0,0,0,0.8)"
-                : "0 12px 36px rgba(11,87,208,0.45)"
-            },
-            "&:active": {
-              transform: "translateY(0) scale(0.95)"
-            }
-          }}
+          className={cn(
+            "fixed right-5 bottom-22 z-50 size-12 rounded-full shadow-lg transition-all duration-200 hover:-translate-y-1 active:scale-95 sm:right-8 sm:bottom-8",
+            visible
+              ? "pointer-events-auto scale-100 opacity-100"
+              : "pointer-events-none scale-75 opacity-0"
+          )}
         >
-          <KeyboardArrowUpIcon fontSize="medium" />
-        </Fab>
-      </Tooltip>
-    </Zoom>
+          <ArrowUp className="size-5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="left">Go to top</TooltipContent>
+    </Tooltip>
   );
 };
 

@@ -1,13 +1,8 @@
+"use client";
+
 import React from "react";
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Container, 
-  Paper, 
-  Stack 
-} from "@mui/material";
-import { ErrorOutline as ErrorIcon, Home as HomeIcon } from "@mui/icons-material";
+import { CircleAlert, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -26,56 +21,29 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <Container maxWidth="sm">
-          <Box 
-            sx={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              minHeight: "100vh",
-              textAlign: "center"
-            }}
-          >
-           <Paper 
-                elevation={0}
-                sx={{ 
-                  p: 6, 
-                  borderRadius: 1, 
-                  border: '1.5px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.paper' 
-                }}
-            >
-                <ErrorIcon sx={{ fontSize: 80, color: 'error.main', mb: 3 }} />
-                <Typography variant="h4" fontWeight={800} gutterBottom>
-                    Something went wrong
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                    An unexpected error occurred. Don't worry, your data is safe.
-                </Typography>
-                <Stack direction="row" spacing={2} justifyContent="center">
-                    <Button 
-                        variant="contained" 
-                        size="large" 
-                        onClick={() => window.location.reload()}
-                        sx={{ borderRadius: 2 }}
-                    >
-                        Try Again
-                    </Button>
-                    <Button 
-                        variant="outlined" 
-                        size="large" 
-                        href="/"
-                        startIcon={<HomeIcon />}
-                        sx={{ borderRadius: 2 }}
-                    >
-                        Go Home
-                    </Button>
-                </Stack>
-            </Paper>
-          </Box>
-        </Container>
+        <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center text-center">
+          <div className="rounded-lg border border-border bg-card p-12">
+            <CircleAlert className="mx-auto mb-6 size-16 text-destructive" />
+            <h1 className="text-2xl font-extrabold text-foreground">
+              Something went wrong
+            </h1>
+            <p className="mt-2 mb-8 text-muted-foreground">
+              An unexpected error occurred. Don&apos;t worry, your data is safe.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button size="lg" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a hard navigation is intentional when recovering from a crash */}
+                <a href="/">
+                  <Home />
+                  Go Home
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
       );
     }
 

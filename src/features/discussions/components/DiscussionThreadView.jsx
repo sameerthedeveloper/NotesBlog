@@ -1,29 +1,34 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  ThumbsUp,
+  Pin,
+  Lock,
+  Unlock,
+  CheckCircle2,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  Box,
-  Typography,
-  Stack,
-  Avatar,
-  IconButton,
-  Button,
-  Chip,
-  Divider,
-  CircularProgress,
-  Tooltip
-} from "@mui/material";
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Close as CloseIcon,
-  ThumbUpOutlined as LikeIcon,
-  ThumbUp as LikedIcon,
-  PushPin as PinnedIcon,
-  Lock as LockedIcon,
-  LockOpen as UnlockIcon,
-  CheckCircle as SolvedIcon,
-  DeleteOutline as DeleteIcon
-} from "@mui/icons-material";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import {
   subscribeReplies,
@@ -34,25 +39,21 @@ import {
   toggleLockTopic,
   togglePinTopic,
   deleteTopic,
-  deleteReply
+  deleteReply,
 } from "../services/discussionService";
 import ReplyItem from "./ReplyItem";
 import ReplyComposer from "./ReplyComposer";
-import toast from "react-hot-toast";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-const DiscussionThreadView = ({
-  open,
-  onClose,
-  topic,
-  currentUser,
-  userProfile,
-  likedIds
-}) => {
+const DiscussionThreadView = ({ open, onClose, topic, currentUser, userProfile, likedIds }) => {
   const [replies, setReplies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!topic?.id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting load state before a real-time Firestore subscription
     setLoading(true);
     const unsubscribe = subscribeReplies(topic.id, (fetchedReplies) => {
       setReplies(fetchedReplies);
@@ -122,145 +123,138 @@ const DiscussionThreadView = ({
   };
 
   const handleDeleteTopic = async () => {
-    if (window.confirm("Are you sure you want to delete this discussion topic?")) {
-      try {
-        await deleteTopic(topic.id);
-        toast.success("Topic deleted.");
-        onClose();
-      } catch {
-        toast.error("Failed to delete topic.");
-      }
+    try {
+      await deleteTopic(topic.id);
+      toast.success("Topic deleted.");
+      onClose();
+    } catch {
+      toast.error("Failed to delete topic.");
     }
   };
 
-  // Group replies into top-level and nested children
   const topLevelReplies = replies.filter((r) => !r.parentReplyId);
   const getChildReplies = (parentId) => replies.filter((r) => r.parentReplyId === parentId);
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 3, p: 0, maxHeight: "90vh" }
-      }}
-    >
-      <DialogTitle
-        sx={{
-          p: 2.5,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid",
-          borderColor: "divider"
-        }}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Chip label={topic.category || "General"} color="primary" variant="outlined" size="small" sx={{ fontWeight: 700 }} />
-          {topic.isPinned && <Chip icon={<PinnedIcon />} label="Pinned" size="small" color="secondary" sx={{ fontWeight: 700 }} />}
-          {topic.isSolved && <Chip icon={<SolvedIcon />} label="Solved" size="small" color="success" sx={{ fontWeight: 700 }} />}
-          {topic.isLocked && <Chip icon={<LockedIcon />} label="Locked" size="small" color="warning" sx={{ fontWeight: 700 }} />}
-        </Stack>
-
-        <IconButton onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
-        {/* Main Topic Header & Content */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" fontWeight={800} letterSpacing="-0.02em" mb={2}>
-            {topic.title}
-          </Typography>
-
-          <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-            <Avatar src={topic.authorPhoto} sx={{ width: 44, height: 44, bgcolor: "primary.main", fontWeight: 700 }}>
-              {topic.authorName?.charAt(0) || "U"}
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700}>
-                {topic.authorName || "Anonymous"}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Posted {topic.createdAt?.toDate ? formatDistanceToNow(topic.createdAt.toDate()) + " ago" : "Recently"}
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Typography variant="body1" sx={{ whitespace: "pre-wrap", lineHeight: 1.7, color: "text.primary", mb: 3 }}>
-            {topic.content}
-          </Typography>
-
-          {topic.tags && topic.tags.length > 0 && (
-            <Stack direction="row" spacing={1} flexWrap="wrap" mb={3}>
-              {topic.tags.map((t) => (
-                <Chip key={t} label={`#${t}`} size="small" variant="outlined" sx={{ borderRadius: 2 }} />
-              ))}
-            </Stack>
-          )}
-
-          {/* Topic Action Bar */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center" pb={2} borderBottom="1px solid" borderColor="divider">
-            <Button
-              variant={isTopicLiked ? "contained" : "outlined"}
-              startIcon={isTopicLiked ? <LikedIcon /> : <LikeIcon />}
-              onClick={handleToggleLikeTopic}
-              sx={{ borderRadius: 2.5, fontWeight: 700 }}
-            >
-              {topic.likeCount || 0} Upvotes
-            </Button>
-
-            {canModerate && (
-              <Stack direction="row" spacing={1}>
-                <Tooltip title={topic.isPinned ? "Unpin Topic" : "Pin Topic"}>
-                  <IconButton onClick={handleTogglePin} color={topic.isPinned ? "secondary" : "default"}>
-                    <PinnedIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={topic.isLocked ? "Unlock Thread" : "Lock Thread"}>
-                  <IconButton onClick={handleToggleLock} color={topic.isLocked ? "warning" : "default"}>
-                    {topic.isLocked ? <LockedIcon /> : <UnlockIcon />}
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete Topic">
-                  <IconButton onClick={handleDeleteTopic} color="error">
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="outline" className="font-semibold text-primary">
+              {topic.category || "General"}
+            </Badge>
+            {topic.isPinned && (
+              <Badge variant="secondary" className="gap-1"><Pin className="size-3" />Pinned</Badge>
             )}
-          </Stack>
-        </Box>
+            {topic.isSolved && (
+              <Badge className="gap-1 bg-success text-success-foreground"><CheckCircle2 className="size-3" />Solved</Badge>
+            )}
+            {topic.isLocked && (
+              <Badge variant="secondary" className="gap-1"><Lock className="size-3" />Locked</Badge>
+            )}
+          </div>
+          <DialogTitle className="text-xl">{topic.title}</DialogTitle>
+        </DialogHeader>
 
-        {/* Replies Section */}
-        <Typography variant="h6" fontWeight={800} mb={2}>
-          Replies ({replies.length})
-        </Typography>
+        <div className="mb-2 flex items-center gap-3">
+          <Avatar className="size-11">
+            <AvatarImage src={topic.authorPhoto || undefined} />
+            <AvatarFallback>{topic.authorName?.charAt(0) || "U"}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-bold">{topic.authorName || "Anonymous"}</p>
+            <p className="text-xs text-muted-foreground">
+              Posted {topic.createdAt?.toDate ? formatDistanceToNow(topic.createdAt.toDate()) + " ago" : "Recently"}
+            </p>
+          </div>
+        </div>
 
-        {/* Sticky Reply Composer */}
+        <p className="mb-3 leading-relaxed whitespace-pre-wrap">{topic.content}</p>
+
+        {topic.tags?.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {topic.tags.map((t) => (
+              <Badge key={t} variant="outline" className="rounded-md">#{t}</Badge>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <Button
+            variant={isTopicLiked ? "default" : "outline"}
+            onClick={handleToggleLikeTopic}
+          >
+            <ThumbsUp className={cn("size-4", isTopicLiked && "fill-current")} />
+            {topic.likeCount || 0} Upvotes
+          </Button>
+
+          {canModerate && (
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                className={topic.isPinned ? "text-primary" : "text-muted-foreground"}
+                title={topic.isPinned ? "Unpin Topic" : "Pin Topic"}
+                onClick={handleTogglePin}
+              >
+                <Pin className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={topic.isLocked ? "text-amber-600" : "text-muted-foreground"}
+                title={topic.isLocked ? "Unlock Thread" : "Lock Thread"}
+                onClick={handleToggleLock}
+              >
+                {topic.isLocked ? <Lock className="size-4" /> : <Unlock className="size-4" />}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-destructive"
+                title="Delete Topic"
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <h3 className="mt-4 mb-3 text-lg font-extrabold">Replies ({replies.length})</h3>
+
         {!topic.isLocked && (
-          <Box mb={4}>
+          <div className="mb-4">
             <ReplyComposer onSubmit={handlePostReply} placeholder="Join the discussion..." />
-          </Box>
+          </div>
         )}
 
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
+          <div className="flex justify-center py-6">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          </div>
         ) : topLevelReplies.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
-            <Typography variant="body2">No replies yet. Be the first to share your thoughts!</Typography>
-          </Box>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No replies yet. Be the first to share your thoughts!
+          </p>
         ) : (
-          <Stack spacing={2}>
-            {topLevelReplies.map((reply) => (
-              <React.Fragment key={reply.id}>
+          topLevelReplies.map((reply) => (
+            <div key={reply.id}>
+              <ReplyItem
+                reply={reply}
+                topic={topic}
+                currentUserId={currentUserId}
+                likedIds={likedIds}
+                onLike={(id) => toggleLikeReply(id, currentUserId)}
+                onReplySubmit={handlePostReply}
+                onMarkSolved={handleMarkSolved}
+                onDelete={(id) => deleteReply(id, topic.id)}
+                depth={0}
+              />
+              {getChildReplies(reply.id).map((child) => (
                 <ReplyItem
-                  reply={reply}
+                  key={child.id}
+                  reply={child}
                   topic={topic}
                   currentUserId={currentUserId}
                   likedIds={likedIds}
@@ -268,29 +262,28 @@ const DiscussionThreadView = ({
                   onReplySubmit={handlePostReply}
                   onMarkSolved={handleMarkSolved}
                   onDelete={(id) => deleteReply(id, topic.id)}
-                  depth={0}
+                  depth={1}
                 />
-
-                {/* Render Nested Replies */}
-                {getChildReplies(reply.id).map((child) => (
-                  <ReplyItem
-                    key={child.id}
-                    reply={child}
-                    topic={topic}
-                    currentUserId={currentUserId}
-                    likedIds={likedIds}
-                    onLike={(id) => toggleLikeReply(id, currentUserId)}
-                    onReplySubmit={handlePostReply}
-                    onMarkSolved={handleMarkSolved}
-                    onDelete={(id) => deleteReply(id, topic.id)}
-                    depth={1}
-                  />
-                ))}
-              </React.Fragment>
-            ))}
-          </Stack>
+              ))}
+            </div>
+          ))
         )}
       </DialogContent>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this discussion topic?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the topic and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTopic}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

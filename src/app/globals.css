@@ -1,0 +1,261 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../styles/opennotes-content.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
+  --font-serif: var(--font-app-serif);
+  --font-heading: var(--font-app-sans);
+  --color-exam-blue: var(--exam-blue);
+  --color-exam-blue-dark: var(--exam-blue-dark);
+  --color-exam-orange: var(--exam-orange);
+  --color-exam-orange-dark: var(--exam-orange-dark);
+  --color-exam-green: var(--exam-green);
+  --color-exam-green-dark: var(--exam-green-dark);
+  --color-exam-purple: var(--exam-purple);
+  --color-exam-purple-dark: var(--exam-purple-dark);
+  --color-exam-yellow: var(--exam-yellow);
+  --color-exam-yellow-dark: var(--exam-yellow-dark);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-text-body: var(--text-body);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-copper-50: var(--copper-50);
+  --color-copper-100: var(--copper-100);
+  --color-copper-300: var(--copper-300);
+  --color-copper-400: var(--copper-400);
+  --color-copper-500: var(--copper-500);
+  --color-copper-600: var(--copper-600);
+  --color-copper-700: var(--copper-700);
+  --color-copper-900: var(--copper-900);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+  Ink & Copper — layered color system (OKLCH).
+
+  Layer 1 — neutrals: 4 background elevations (base < subtle < sidebar tint < card),
+  1 border shade, 3 text variants (heading/body/muted). Dark mode spaces elevations
+  4-6% apart (vs ~2% in light mode) and gets LIGHTER as it elevates toward the user
+  (card > subtle > base) — the opposite direction of light mode, which is how real
+  dark-UI depth reads correctly.
+
+  Layer 2 — brand ramp: copper-50..900, one hue (55), lightness/chroma stepped.
+  Light mode leans on 600/700; dark mode shifts to 300/400 (lighter = legible on
+  dark surfaces) paired with near-black foreground text rather than white.
+
+  Layer 3 — semantic (destructive/success/warning/info): fixed hues that are
+  never reused for brand emphasis, so status is never ambiguous with "this is
+  the accent color."
+
+  Layer 4 — retint formula, for the next time the brand hue changes:
+    new lightness  = old lightness - 0.03
+    new chroma     = old chroma + 0.02
+    new hue        = rotate to target brand hue
+  Apply that delta to every neutral (bg/border/text) token below, keep the
+  copper ramp's L/C curve as-is and just rotate its hue.
+*/
+:root {
+  /* Layer 1 — neutrals */
+  --bg-base: oklch(0.99 0.002 60);
+  --bg-subtle: oklch(0.97 0.003 60);
+  --bg-sidebar: oklch(0.965 0.005 55);
+  --bg-card: oklch(1 0 0);
+  --border-soft: oklch(0.90 0.003 60);
+  --text-heading: oklch(0.20 0.01 60);
+  --text-body: oklch(0.32 0.01 60);
+  --text-muted: oklch(0.55 0.01 60);
+
+  /* Layer 2 — copper brand ramp */
+  --copper-50: oklch(0.97 0.02 55);
+  --copper-100: oklch(0.93 0.04 55);
+  --copper-300: oklch(0.78 0.10 55);
+  --copper-400: oklch(0.68 0.13 55);
+  --copper-500: oklch(0.58 0.15 55);
+  --copper-600: oklch(0.50 0.15 55);
+  --copper-700: oklch(0.42 0.14 55);
+  --copper-900: oklch(0.28 0.10 55);
+
+  --background: var(--bg-base);
+  --foreground: var(--text-heading);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-heading);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-heading);
+  --primary: var(--copper-600);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--text-heading);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-subtle);
+  --accent-foreground: var(--text-heading);
+
+  /* Layer 3 — semantic (fixed hues, never brand copper) */
+  --destructive: oklch(0.55 0.20 25);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.55 0.15 145);
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.75 0.15 85);
+  --warning-foreground: var(--text-heading);
+  --info: oklch(0.55 0.15 230);
+  --info-foreground: oklch(1 0 0);
+
+  --border: var(--border-soft);
+  --input: var(--border-soft);
+  --ring: var(--copper-600);
+
+  /* Chart series: fixed L/C, hue stepped 28° per series from the brand hue */
+  --chart-1: oklch(0.58 0.15 55);
+  --chart-2: oklch(0.58 0.15 83);
+  --chart-3: oklch(0.58 0.15 111);
+  --chart-4: oklch(0.58 0.15 139);
+  --chart-5: oklch(0.58 0.15 167);
+
+  --radius: 0.5rem;
+
+  --sidebar: var(--bg-sidebar);
+  --sidebar-foreground: var(--text-heading);
+  --sidebar-primary: var(--copper-600);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: var(--bg-subtle);
+  --sidebar-accent-foreground: var(--text-heading);
+  --sidebar-border: var(--border-soft);
+  --sidebar-ring: var(--copper-600);
+
+  --accent-hover: var(--copper-700);
+  --accent-ink: var(--copper-900);
+  --accent-soft: var(--copper-50);
+
+  --exam-blue: #e0f2fe;
+  --exam-blue-dark: #0369a1;
+  --exam-orange: #ffedd5;
+  --exam-orange-dark: #c2410c;
+  --exam-green: #dcfce7;
+  --exam-green-dark: #15803d;
+  --exam-purple: #f3e8ff;
+  --exam-purple-dark: #7e22ce;
+  --exam-yellow: #fef9c3;
+  --exam-yellow-dark: #a16207;
+}
+
+.dark {
+  /* Layer 1 — neutrals (elevation reverses: surfaces get LIGHTER as they rise) */
+  --bg-base: oklch(0.14 0.005 60);
+  --bg-subtle: oklch(0.18 0.006 60);
+  --bg-sidebar: oklch(0.16 0.008 55);
+  --bg-card: oklch(0.20 0.006 60);
+  --border-soft: oklch(0.28 0.005 60);
+  --text-heading: oklch(0.97 0.003 60);
+  --text-body: oklch(0.85 0.004 60);
+  --text-muted: oklch(0.60 0.005 60);
+
+  --background: var(--bg-base);
+  --foreground: var(--text-heading);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-heading);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-heading);
+  /* Layer 2 — brand shifts lighter in dark mode; pair with near-black text, not white */
+  --primary: var(--copper-400);
+  --primary-foreground: oklch(0.15 0.01 60);
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--text-heading);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-subtle);
+  --accent-foreground: var(--text-heading);
+
+  /* Layer 3 — semantic: lighter in dark mode, same treatment (dark text, not white) */
+  --destructive: oklch(0.65 0.18 25);
+  --destructive-foreground: oklch(0.15 0.01 60);
+  --success: oklch(0.65 0.14 145);
+  --success-foreground: oklch(0.15 0.01 60);
+  --warning: oklch(0.78 0.14 85);
+  --warning-foreground: oklch(0.15 0.01 60);
+  --info: oklch(0.65 0.13 230);
+  --info-foreground: oklch(0.15 0.01 60);
+
+  --border: var(--border-soft);
+  --input: var(--border-soft);
+  --ring: var(--copper-400);
+
+  --chart-1: oklch(0.68 0.15 55);
+  --chart-2: oklch(0.68 0.15 83);
+  --chart-3: oklch(0.68 0.15 111);
+  --chart-4: oklch(0.68 0.15 139);
+  --chart-5: oklch(0.68 0.15 167);
+
+  --sidebar: var(--bg-sidebar);
+  --sidebar-foreground: var(--text-heading);
+  --sidebar-primary: var(--copper-400);
+  --sidebar-primary-foreground: oklch(0.15 0.01 60);
+  --sidebar-accent: var(--bg-subtle);
+  --sidebar-accent-foreground: var(--text-heading);
+  --sidebar-border: var(--border-soft);
+  --sidebar-ring: var(--copper-400);
+
+  --accent-hover: var(--copper-500);
+  --accent-ink: var(--copper-300);
+  --accent-soft: var(--copper-900);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

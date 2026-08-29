@@ -1,744 +1,678 @@
-import React, { useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { 
-  AppBar, 
-  Box, 
-  CssBaseline, 
-  Divider, 
-  Drawer, 
-  IconButton, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Toolbar, 
-  Typography, 
-  Avatar, 
-  Menu, 
-  MenuItem, 
-  Tooltip,
-  useTheme,
-  useMediaQuery,
-  Button,
-  Stack,
-  Container,
-  Fab,
-  InputBase,
-  Badge,
-  Breadcrumbs,
-  Link as MuiLink,
-  alpha,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper,
+"use client";
+
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  Menu as MenuIcon,
+  PanelLeft,
+  PanelLeftOpen,
+  Plus,
+  Notebook,
+  User,
+  LogOut,
+  Moon,
+  Sun,
+  Search,
+  Bookmark,
+  Settings,
+  X,
+  Compass,
+  LayoutDashboard,
+  Bell,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  HelpCircle,
+  MessagesSquare,
+  ChevronDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions
-} from "@mui/material";
-import { 
-  Menu as MenuIcon, 
-  Add as AddIcon, 
-  Notes as NotesIcon,
-  Person as PersonIcon, 
-  Logout as LogoutIcon,
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
-  Search as SearchIcon,
-  PushPin as PinnedIcon,
-  Favorite as FavoriteIcon,
-  SettingsOutlined as SettingsIcon,
-  Clear as ClearIcon,
-  ArrowBack as ArrowBackIcon,
-  Close as CloseIcon,
-  Explore as ExploreIcon,
-  Dashboard as DashboardIcon,
-  NotificationsOutlined as NotificationsIcon,
-  ShareOutlined as ShareIcon,
-  AdminPanelSettingsOutlined as AdminIcon,
-  BookmarkOutlined as BookmarkIcon,
-  AutoAwesome as SparklesIcon,
-  MonetizationOnOutlined as MonetizationIcon,
-  HelpOutlineOutlined as HelpIcon,
-  ForumOutlined as ForumIcon
-} from "@mui/icons-material";
-import PromptBuilderModal from "../components/PromptBuilderModal";
-import OnboardingWizardModal from "../components/OnboardingWizardModal";
-import { useAuth } from "../context/AuthContext";
-import { useAppTheme } from "../context/ThemeContext";
-import { useNetworkStatus } from "../utils/offlineSyncManager";
-import { usePlatformSettings } from "../context/PlatformSettingsContext";
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import PromptBuilderModal from "@/components/PromptBuilderModal";
+import OnboardingWizardModal from "@/components/OnboardingWizardModal";
+import { useAuth } from "@/context/AuthContext";
+import { useAppTheme } from "@/context/ThemeContext";
+import { useNetworkStatus } from "@/utils/offlineSyncManager";
+import { usePlatformSettings } from "@/context/PlatformSettingsContext";
+import { isSuperAdmin } from "@/config/adminConfig";
+import { cn } from "@/lib/utils";
 
-import { isSuperAdmin } from "../config/adminConfig";
+const BOTTOM_NAV_ITEMS = [
+  { label: "Home", icon: LayoutDashboard, path: "/dashboard" },
+  { label: "Notes", icon: Notebook, path: "/notes" },
+  { label: "Discover", icon: Compass, path: "/discover" },
+  { label: "Bookmarks", icon: Bookmark, path: "/bookmarks" },
+  { label: "Search", icon: Search, path: "/search" },
+  { label: "Menu", icon: MenuIcon, action: "menu" },
+];
 
-const drawerWidth = 260;
+function useNavGroups() {
+  const { currentUser } = useAuth();
+  const { settings } = usePlatformSettings();
 
-const AppLayout = () => {
+  const workspace = [
+    { text: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+    { text: "My Notes", icon: Notebook, path: "/notes" },
+    { text: "Discover", icon: Compass, path: "/discover" },
+    { text: "Community", icon: MessagesSquare, path: "/community" },
+    { text: "Shared Notes", icon: Share2, path: "/shared" },
+    { text: "Bookmarks", icon: Bookmark, path: "/bookmarks" },
+    ...(settings?.creatorMonetization?.enableCreatorMonetization !== false
+      ? [{ text: "Monetization", icon: Sparkles, path: "/monetization" }]
+      : []),
+  ];
+
+  const tools = [
+    { text: "Search", icon: Search, path: "/search" },
+    { text: "Notifications", icon: Bell, path: "/notifications", badge: 2 },
+  ];
+
+  const admin = isSuperAdmin(currentUser)
+    ? [{ text: "Admin Panel", icon: ShieldCheck, path: "/admin" }]
+    : [];
+
+  return { workspace, tools, admin };
+}
+
+function NavList({ items, pathname, onNavigate, collapsed }) {
+  return (
+    <nav className={cn("flex flex-col gap-1", collapsed ? "items-center px-1.5" : "px-2")}>
+      {items.map((item) => {
+        const isSelected = Boolean(item.path) && pathname === item.path;
+        const Icon = item.icon;
+
+        const buttonClassName = cn(
+          "relative flex items-center rounded-lg text-left text-sm transition-colors",
+          collapsed ? "size-10 shrink-0 justify-center" : "w-full gap-3 px-3 py-2",
+          isSelected
+            ? "bg-primary/10 font-semibold text-primary"
+            : "font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        );
+
+        const buttonContent = (
+          <>
+            <Icon className={collapsed ? "size-5 shrink-0" : "size-4.5 shrink-0"} />
+            {!collapsed && <span className="flex-1">{item.text}</span>}
+            {Boolean(item.badge) &&
+              (collapsed ? (
+                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary" />
+              ) : (
+                <Badge className="h-4 min-w-4 justify-center rounded-full px-1 text-[10px]">
+                  {item.badge}
+                </Badge>
+              ))}
+          </>
+        );
+
+        if (!collapsed) {
+          return (
+            <button
+              key={item.text}
+              onClick={() => (item.onClick ? item.onClick() : onNavigate(item.path))}
+              className={buttonClassName}
+            >
+              {buttonContent}
+            </button>
+          );
+        }
+
+        const button = (
+          <button
+            onClick={() => (item.onClick ? item.onClick() : onNavigate(item.path))}
+            className={buttonClassName}
+          >
+            {buttonContent}
+          </button>
+        );
+
+        return (
+          <Tooltip key={item.text}>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent side="right">{item.text}</TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </nav>
+  );
+}
+
+function NavGroupLabel({ collapsed, children }) {
+  if (collapsed) {
+    return <div className="my-2 h-px w-8 self-center bg-border" />;
+  }
+  return (
+    <p className="px-3 pt-4 pb-1 font-mono text-[11px] font-bold tracking-wider text-muted-foreground/70 uppercase">
+      {children}
+    </p>
+  );
+}
+
+function SidebarNav({
+  currentUser,
+  initial,
+  mode,
+  toggleColorMode,
+  navGroups,
+  pathname,
+  onNavigate,
+  onCreateNote,
+  onHelp,
+  onLogout,
+  onOpenAI,
+  aiEnabled,
+  searchQuery,
+  onSearchChange,
+  onSearchSubmit,
+  onToggleSidebar,
+  collapsed = false,
+}) {
+  const toolsItems = [
+    ...(aiEnabled ? [{ text: "AI Assistant", icon: Sparkles, onClick: onOpenAI }] : []),
+    ...navGroups.tools,
+  ];
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Logo + sidebar controls */}
+      <div
+        className={cn(
+          "flex items-center border-b border-border py-3",
+          collapsed ? "flex-col gap-2 px-2" : "justify-between gap-2 px-3"
+        )}
+      >
+        <Link href="/dashboard" className={cn("flex min-w-0 items-center gap-2", collapsed && "justify-center")}>
+          <Image
+            src="/logo.svg"
+            alt="OpenNotes"
+            width={28}
+            height={28}
+            className="shrink-0 rounded-md"
+          />
+          {!collapsed && (
+            <span className="truncate text-base font-extrabold tracking-tight text-foreground">
+              OpenNotes
+            </span>
+          )}
+        </Link>
+        <div className={cn("flex shrink-0 items-center gap-0.5", collapsed && "flex-col")}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleColorMode}
+                aria-label="toggle theme"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+              >
+                {mode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side={collapsed ? "right" : "bottom"}>
+              {mode === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+            </TooltipContent>
+          </Tooltip>
+          {onToggleSidebar && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onToggleSidebar}
+                  aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                >
+                  {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeft className="size-4" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side={collapsed ? "right" : "bottom"}>
+                {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {/* Profile control */}
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex w-full items-center border-b border-border text-left hover:bg-muted",
+                  collapsed ? "justify-center py-3" : "gap-2.5 px-3 py-3"
+                )}
+              >
+                <Avatar className="size-8 shrink-0">
+                  <AvatarImage src={currentUser?.photoURL || undefined} />
+                  <AvatarFallback className="bg-muted text-sm font-bold text-foreground">
+                    {initial}
+                  </AvatarFallback>
+                </Avatar>
+                {!collapsed && (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold">
+                        {currentUser?.displayName || "User"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {currentUser?.email}
+                      </p>
+                    </div>
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                  </>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right">{currentUser?.displayName || "User"}</TooltipContent>
+          )}
+        </Tooltip>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuItem onClick={() => onNavigate("/profile")}>
+            <User />
+            Profile
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={onLogout}>
+            <LogOut />
+            Sign Out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Search */}
+      {!collapsed && (
+        <div className="px-2 pt-2">
+          <div className="flex items-center gap-2 rounded-lg bg-muted px-3 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring/40">
+            <Search className="size-4 shrink-0 text-muted-foreground" />
+            <input
+              placeholder="Search notes..."
+              value={searchQuery}
+              onChange={onSearchChange}
+              onKeyDown={onSearchSubmit}
+              className="h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange({ target: { value: "" } })}
+                aria-label="clear search"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className={cn("mt-2", collapsed ? "flex justify-center px-1.5" : "px-2")}>
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" onClick={onCreateNote}>
+                <Plus className="size-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Create Note</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button className="w-full" onClick={onCreateNote}>
+            <Plus className="size-5" />
+            Create Note
+          </Button>
+        )}
+      </div>
+
+      {/* Scrollable nav groups */}
+      <div className={cn("flex-1 overflow-y-auto", collapsed && "flex flex-col items-center")}>
+        <NavGroupLabel collapsed={collapsed}>Workspace</NavGroupLabel>
+        <NavList items={navGroups.workspace} pathname={pathname} onNavigate={onNavigate} collapsed={collapsed} />
+
+        <NavGroupLabel collapsed={collapsed}>Tools</NavGroupLabel>
+        <NavList items={toolsItems} pathname={pathname} onNavigate={onNavigate} collapsed={collapsed} />
+
+        {navGroups.admin.length > 0 && (
+          <>
+            <NavGroupLabel collapsed={collapsed}>Admin</NavGroupLabel>
+            <NavList items={navGroups.admin} pathname={pathname} onNavigate={onNavigate} collapsed={collapsed} />
+          </>
+        )}
+      </div>
+
+      {/* Bottom-pinned: Settings & Help */}
+      <div className={cn("border-t border-border py-2", collapsed && "flex flex-col items-center")}>
+        <NavList
+          items={[{ text: "Settings", icon: Settings, path: "/settings" }]}
+          pathname={pathname}
+          onNavigate={onNavigate}
+          collapsed={collapsed}
+        />
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onHelp}
+                className="mt-1 flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <HelpCircle className="size-5 shrink-0" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Help &amp; Feedback</TooltipContent>
+          </Tooltip>
+        ) : (
+          <nav className="flex flex-col gap-1 px-2">
+            <button
+              onClick={onHelp}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <HelpCircle className="size-4.5 shrink-0" />
+              Help &amp; Feedback
+            </button>
+          </nav>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const AppLayout = ({ children }) => {
   const { currentUser, logout } = useAuth();
   const { mode, toggleColorMode } = useAppTheme();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(true);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const { isOnline } = useNetworkStatus();
+  const { settings } = usePlatformSettings();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
-  const { isOnline } = useNetworkStatus();
-  const { settings } = usePlatformSettings();
-  
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  const isViewingNote = location.pathname.startsWith("/note/") || location.pathname.startsWith("/public/note/") || location.pathname === "/note/new";
+  const navGroups = useNavGroups();
+  const aiEnabled = settings?.ai?.enableAI !== false;
 
-  const handleDrawerToggle = () => {
-    if (isMobile) {
-      setMobileOpen(!mobileOpen);
-    } else {
-      setDrawerOpen(!drawerOpen);
-    }
-  };
-
-  const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
-  const handleProfileMenuClose = () => setAnchorEl(null);
+  const isViewingNote =
+    pathname.startsWith("/note/") ||
+    pathname.startsWith("/public/note/") ||
+    pathname === "/note/new";
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/login");
+      router.push("/login");
     } catch (error) {
       console.error("Logout error", error);
     }
   };
 
-  const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
-    { text: "My Notes", icon: <NotesIcon />, path: "/notes" },
-    { text: "Discover", icon: <ExploreIcon />, path: "/discover" },
-    { text: "Community", icon: <ForumIcon />, path: "/community" },
-    { text: "Shared Notes", icon: <ShareIcon />, path: "/shared" },
-    { text: "Bookmarks", icon: <BookmarkIcon />, path: "/bookmarks" },
-    ...(settings?.creatorMonetization?.enableCreatorMonetization !== false
-      ? [{ text: "Monetization", icon: <MonetizationIcon />, path: "/monetization" }]
-      : []),
-    { text: "Search", icon: <SearchIcon />, path: "/search" },
-    { text: "Notifications", icon: <NotificationsIcon />, path: "/notifications" },
-    { text: "Profile", icon: <PersonIcon />, path: "/profile" },
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
-    ...(isSuperAdmin(currentUser) ? [{ text: "Admin Panel", icon: <AdminIcon />, path: "/admin" }] : []),
-  ];
-
   const handleSearchSubmit = (e) => {
     if (e.key === "Enter" && searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
-  const drawerContent = (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", pt: 1 }}>
-      {/* Create Note Button (Desktop / Larger screens) */}
-      {!isMobile && (
-        <Box sx={{ px: 2, mb: 2, mt: 1 }}>
-           <Button
-              variant="contained"
-              fullWidth
-              startIcon={<AddIcon sx={{ fontSize: 24 }} />}
-              onClick={() => navigate("/note/new")}
-              sx={{ 
-                  py: 1.5, 
-                  px: 3,
-                  borderRadius: 3,
-                  fontWeight: 700, 
-                  fontSize: '0.9rem',
-                  backgroundColor: theme.palette.primary.main,
-                  color: '#FFFFFF',
-                  boxShadow: '0px 4px 12px rgba(11, 87, 208, 0.25)',
-                  "&:hover": {
-                      backgroundColor: theme.palette.primary.dark,
-                  }
-              }}
-           >
-              Create Note
-           </Button>
-        </Box>
-      )}
+  const goTo = (path) => {
+    router.push(path);
+    setMobileNavOpen(false);
+  };
 
-      <Box sx={{ overflow: "auto", flexGrow: 1, px: 1 }}>
-        <List>
-          {menuItems.map((item) => {
-            const isSelected = location.pathname === item.path;
-            return (
-              <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton 
-                  selected={isSelected}
-                  onClick={() => {
-                    navigate(item.path);
-                    if (isMobile) setMobileOpen(false);
-                  }}
-                  sx={{
-                      borderRadius: 3,
-                      py: 1,
-                      "&.Mui-selected": {
-                          backgroundColor: theme.palette.primary.container || alpha(theme.palette.primary.main, 0.12),
-                          color: theme.palette.primary.main,
-                          "& .MuiListItemIcon-root": { color: theme.palette.primary.main },
-                          "& .MuiTypography-root": { fontWeight: 700 }
-                      }
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 40, color: isSelected ? "primary.main" : "text.secondary" }}>
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={item.text} 
-                    primaryTypographyProps={{ fontWeight: isSelected ? 700 : 500, fontSize: '0.9rem' }} 
-                  />
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-        </List>
-      </Box>
-    </Box>
-  );
-
-  // Generate breadcrumb links based on current path
-  const pathnames = location.pathname.split("/").filter((x) => x);
+  const pathnames = pathname.split("/").filter(Boolean);
+  const initial = currentUser?.displayName?.charAt(0) || "U";
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%", bgcolor: "background.default", overflowX: "hidden" }}>
-      <CssBaseline />
-      
-      <AppBar 
-        position="fixed" 
-        elevation={0}
-        sx={{ 
-          top: 0,
-          left: 0,
-          right: 0,
-          width: "100%",
-          zIndex: (theme) => theme.zIndex.drawer + 20,
-          borderBottom: "1px solid", 
-          borderColor: "divider",
-          backgroundColor: mode === "dark" ? "#131314" : "#F0F4F9",
-          backgroundImage: "none",
-          pt: "env(safe-area-inset-top, 0px)",
-          transform: "none",
-          WebkitTransform: "none",
-          boxSizing: "border-box",
-        }}
+    <div className="flex min-h-screen w-full bg-background">
+      {/* Mobile nav sheet — always shows the full labeled nav */}
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent side="left" className="w-72 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigate</SheetTitle>
+          </SheetHeader>
+          <SidebarNav
+            currentUser={currentUser}
+            initial={initial}
+            mode={mode}
+            toggleColorMode={toggleColorMode}
+            navGroups={navGroups}
+            pathname={pathname}
+            onNavigate={goTo}
+            onCreateNote={() => goTo("/note/new")}
+            onHelp={() => setHelpDialogOpen(true)}
+            onLogout={handleLogout}
+            onOpenAI={() => setPromptModalOpen(true)}
+            aiEnabled={aiEnabled}
+            searchQuery={searchQuery}
+            onSearchChange={(e) => setSearchQuery(e.target.value)}
+            onSearchSubmit={handleSearchSubmit}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop sidebar — always visible, toggles between full width and icon rail */}
+      <aside
+        className={cn(
+          "fixed top-0 bottom-0 left-0 z-30 hidden shrink-0 flex-col overflow-hidden border-r border-border bg-background transition-[width] duration-200 md:flex",
+          sidebarCollapsed ? "w-16" : "w-64"
+        )}
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
-        <Toolbar sx={{ px: { xs: 2, md: 3 }, display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 64, height: 64 }}>
-          {isMobile ? (
-            /* ─── MOBILE HEADER (< 900px): Drawer button left, Logo center, Avatar right ─── */
-            <>
-              <IconButton
-                color="inherit"
-                onClick={handleDrawerToggle}
-                edge="start"
-                aria-label="open navigation drawer"
-                sx={{ borderRadius: 2, minWidth: 44, minHeight: 44 }}
-              >
-                <MenuIcon />
-              </IconButton>
+        <SidebarNav
+          currentUser={currentUser}
+          initial={initial}
+          mode={mode}
+          toggleColorMode={toggleColorMode}
+          navGroups={navGroups}
+          pathname={pathname}
+          onNavigate={goTo}
+          onCreateNote={() => router.push("/note/new")}
+          onHelp={() => setHelpDialogOpen(true)}
+          onLogout={handleLogout}
+          onOpenAI={() => setPromptModalOpen(true)}
+          aiEnabled={aiEnabled}
+          searchQuery={searchQuery}
+          onSearchChange={(e) => setSearchQuery(e.target.value)}
+          onSearchSubmit={handleSearchSubmit}
+          onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+          collapsed={sidebarCollapsed}
+        />
+      </aside>
 
-              <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  onClick={() => navigate("/")}
-                  sx={{ cursor: "pointer", userSelect: "none" }}
-                >
-                  <Box component="img" src="/logo.svg" alt="OpenNotes Logo" sx={{ height: 32, width: 32, borderRadius: 1.5 }} />
-                  <Typography
-                    fontWeight={800}
-                    letterSpacing="-0.5px"
-                    color="text.primary"
-                    sx={{ fontSize: "1.1rem", whiteSpace: "nowrap" }}
-                  >
-                    OpenNotes
-                  </Typography>
-                </Stack>
-              </Box>
-
-              <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0.5 }} aria-label="user profile menu">
-                <Avatar 
-                  alt={currentUser?.displayName || "User"} 
-                  src={currentUser?.photoURL || ""} 
-                  sx={{ width: 36, height: 36, bgcolor: theme.palette.primary.main, color: '#fff', fontWeight: 700 }}
-                >
-                  {currentUser?.displayName?.charAt(0) || "U"}
-                </Avatar>
-              </IconButton>
-            </>
-          ) : (
-            /* ─── DESKTOP HEADER (>= 900px): Preserved Exactly As-Is ─── */
-            <>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <IconButton
-                  color="inherit"
-                  onClick={handleDrawerToggle}
-                  edge="start"
-                  sx={{ mr: 0, borderRadius: 2, minWidth: 44, minHeight: 44 }}
-                >
-                  <MenuIcon />
-                </IconButton>
-                <Box 
-                  component="img" 
-                  src={mode === "dark" ? "/header-logo-dark.svg" : "/header-logo.svg"} 
-                  alt="OpenNotes" 
-                  onClick={() => navigate("/")}
-                  sx={{ 
-                    height: 42,
-                    width: "auto", 
-                    cursor: "pointer",
-                    display: "block",
-                    objectFit: "contain"
-                  }} 
-                />
-              </Stack>
-
-              <Box sx={{ 
-                  flexGrow: 1, 
-                  display: "flex", 
-                  justifyContent: "center",
-                  maxWidth: 580,
-                  ml: { sm: 3, md: 5 },
-                  mr: 2
-              }}>
-                <Box sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    width: "100%",
-                    bgcolor: theme.palette.mode === 'light' ? '#EAF1FB' : 'rgba(255,255,255,0.06)',
-                    borderRadius: 6,
-                    px: 2,
-                    height: 44,
-                    transition: 'all 0.2s',
-                    "&:focus-within": {
-                        bgcolor: theme.palette.mode === 'light' ? '#FFFFFF' : '#1E1E1E',
-                        boxShadow: '0px 2px 8px rgba(0,0,0,0.1)'
-                    }
-                }}>
-                  <SearchIcon sx={{ color: "text.secondary", mr: 1.5 }} />
-                  <InputBase
-                    placeholder="Search in notes (press Enter to search HTML)..."
-                    fullWidth
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearchSubmit}
-                    sx={{ fontSize: "0.95rem", color: "text.primary" }}
-                  />
-                  {searchQuery && (
-                      <IconButton size="small" onClick={() => setSearchQuery("")}>
-                          <ClearIcon fontSize="small" />
-                      </IconButton>
-                  )}
-                </Box>
-              </Box>
-
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                {settings?.ai?.enableAI !== false && (
-                  <Tooltip title="AI Prompt Builder">
-                    <IconButton
-                      color="primary"
-                      onClick={() => setPromptModalOpen(true)}
-                      sx={{ minWidth: 44, minHeight: 44 }}
-                    >
-                      <SparklesIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-
-                <Tooltip title="Notifications">
-                  <IconButton
-                    color="inherit"
-                    onClick={() => navigate("/notifications")}
-                    sx={{ minWidth: 44, minHeight: 44 }}
-                  >
-                    <Badge badgeContent={2} color="error">
-                      <NotificationsIcon />
-                    </Badge>
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title="Toggle Light / Dark Mode">
-                  <IconButton onClick={toggleColorMode} color="inherit">
-                    {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
-                  </IconButton>
-                </Tooltip>
-                
-                <Tooltip title="Account Settings">
-                  <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0.5 }}>
-                    <Avatar 
-                      alt={currentUser?.displayName || "User"} 
-                      src={currentUser?.photoURL || ""} 
-                      sx={{ width: 34, height: 34, bgcolor: theme.palette.primary.main, color: '#fff', fontWeight: 700 }}
-                    >
-                      {currentUser?.displayName?.charAt(0) || "U"}
-                    </Avatar>
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            </>
-          )}
-
-          {/* ─── GOOGLE ACCOUNT STYLE PROFILE MENU (Mobile & Desktop) ─── */}
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleProfileMenuClose}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-            transitionDuration={180}
-            PaperProps={{
-              sx: { 
-                mt: 1.5, 
-                width: 320, 
-                borderRadius: 4, 
-                boxShadow: "0px 12px 36px rgba(0,0,0,0.18)", 
-                p: 1.5,
-                bgcolor: mode === "dark" ? "#1E1F22" : "#FFFFFF",
-                border: "1px solid",
-                borderColor: "divider",
-              }
-            }}
+      {/* Main content */}
+      <main
+        className={cn(
+          "flex min-h-screen w-full flex-1 flex-col px-3 pt-4 sm:px-6 md:px-8",
+          isViewingNote ? "pb-6" : "pb-28 md:pb-8",
+          sidebarCollapsed ? "md:pl-16" : "md:pl-64"
+        )}
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 0px))" }}
+      >
+        {/* Mobile-only top bar: menu trigger, since there is no persistent header */}
+        <div className="mb-3 flex items-center justify-between md:hidden">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="open navigation menu"
+            className="rounded-lg p-2 text-foreground hover:bg-muted"
           >
-            <Box sx={{ textAlign: "center", p: 2, bgcolor: mode === "dark" ? "rgba(255,255,255,0.03)" : "#F8FAFD", borderRadius: 3, mb: 1 }}>
-                <Avatar sx={{ width: 64, height: 64, mx: "auto", mb: 1.5, bgcolor: "primary.main", fontSize: "1.75rem", fontWeight: 700 }}>
-                  {currentUser?.displayName?.charAt(0) || "U"}
-                </Avatar>
-                <Typography variant="subtitle1" fontWeight={700}>{currentUser?.displayName || "User"}</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-all", fontSize: "0.85rem" }}>{currentUser?.email}</Typography>
-            </Box>
+            <MenuIcon />
+          </button>
+          <Link href="/dashboard" className="flex select-none items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="OpenNotes"
+              width={28}
+              height={28}
+              className="rounded-md"
+            />
+            <span className="text-base font-extrabold tracking-tight text-foreground">
+              OpenNotes
+            </span>
+          </Link>
+          <div className="size-9" />
+        </div>
 
-            <List disablePadding>
-              <ListItem disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton 
-                  onClick={() => { navigate("/notifications"); handleProfileMenuClose(); }}
-                  sx={{ borderRadius: 2.5, py: 1 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 38 }}><NotificationsIcon fontSize="small" color="primary" /></ListItemIcon>
-                  <ListItemText primary="Notifications" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
-                  <Badge badgeContent={2} color="error" sx={{ mr: 1 }} />
-                </ListItemButton>
-              </ListItem>
-
-              <ListItem disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton 
-                  onClick={toggleColorMode}
-                  sx={{ borderRadius: 2.5, py: 1 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 38 }}>
-                    {mode === "dark" ? <LightModeIcon fontSize="small" sx={{ color: "#F59E0B" }} /> : <DarkModeIcon fontSize="small" color="action" />}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Appearance" 
-                    secondary={mode === "dark" ? "Dark Mode" : "Light Mode"}
-                    primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }}
-                    secondaryTypographyProps={{ fontSize: "0.75rem" }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            </List>
-
-            <Divider sx={{ my: 1 }} />
-
-            <List disablePadding>
-              <ListItem disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton 
-                  onClick={() => { navigate("/profile"); handleProfileMenuClose(); }}
-                  sx={{ borderRadius: 2.5, py: 1 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 38 }}><PersonIcon fontSize="small" /></ListItemIcon>
-                  <ListItemText primary="Profile" primaryTypographyProps={{ fontWeight: 500, fontSize: "0.9rem" }} />
-                </ListItemButton>
-              </ListItem>
-
-              <ListItem disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton 
-                  onClick={() => { navigate("/settings"); handleProfileMenuClose(); }}
-                  sx={{ borderRadius: 2.5, py: 1 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 38 }}><SettingsIcon fontSize="small" /></ListItemIcon>
-                  <ListItemText primary="Settings" primaryTypographyProps={{ fontWeight: 500, fontSize: "0.9rem" }} />
-                </ListItemButton>
-              </ListItem>
-
-              <ListItem disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton 
-                  onClick={() => { setHelpDialogOpen(true); handleProfileMenuClose(); }}
-                  sx={{ borderRadius: 2.5, py: 1 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 38 }}><HelpIcon fontSize="small" /></ListItemIcon>
-                  <ListItemText primary="Help & Feedback" primaryTypographyProps={{ fontWeight: 500, fontSize: "0.9rem" }} />
-                </ListItemButton>
-              </ListItem>
-            </List>
-
-            <Divider sx={{ my: 1 }} />
-
-            <MenuItem 
-              onClick={handleLogout} 
-              sx={{ py: 1.2, borderRadius: 2.5, color: "error.main", "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.08) } }}
-            >
-              <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
-              <Typography fontWeight={700} fontSize="0.9rem">Sign Out</Typography>
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
-
-      {/* Navigation Drawer */}
-      <Box component="nav" sx={{ width: { sm: drawerOpen ? drawerWidth : 0 }, flexShrink: { sm: 0 } }}>
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          sx={{ display: { xs: "block", sm: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
-        >
-          <Toolbar />
-          {drawerContent}
-        </Drawer>
-        <Drawer
-          variant="persistent"
-          open={drawerOpen}
-          sx={{ display: { xs: "none", sm: "block" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
-        >
-          <Toolbar />
-          {drawerContent}
-        </Drawer>
-      </Box>
-
-      {/* Main App Content Container */}
-      <Box
-        component="main"
-        sx={{ 
-          flexGrow: 1, 
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          pt: { xs: "calc(56px + env(safe-area-inset-top, 0px) + 8px)", sm: "calc(64px + env(safe-area-inset-top, 0px) + 12px)" },
-          pb: { xs: isViewingNote ? "calc(24px + env(safe-area-inset-bottom, 0px))" : "calc(112px + env(safe-area-inset-bottom, 0px))", md: 4 },
-          px: { xs: 1.5, sm: 3, md: 4 },
-          width: "100%",
-          maxWidth: "100vw",
-          overflowX: "hidden",
-          boxSizing: "border-box"
-        }}
-      >
-        <Container maxWidth="xl" disableGutters sx={{ maxWidth: 1440, mx: "auto", width: "100%", px: { xs: 0, sm: 0 } }}>
-          {/* Offline Status Banner */}
+        <div className="mx-auto w-full max-w-360">
           {!isOnline && (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 1.5,
-                mb: 2.5,
-                borderRadius: 3,
-                bgcolor: mode === "dark" ? "rgba(234, 179, 8, 0.15)" : "#FEF3C7",
-                border: "1px solid",
-                borderColor: mode === "dark" ? "rgba(234, 179, 8, 0.3)" : "#FDE68A",
-                display: "flex",
-                alignItems: "center",
-                gap: 1.5,
-              }}
-            >
-              <Typography variant="body2" fontWeight={700} color={mode === "dark" ? "#FDE047" : "#92400E"}>
-                📡 Offline Mode Active — All note reads, creates, and edits are stored locally in IndexedDB and will auto-sync with Firebase upon reconnection.
-              </Typography>
-            </Paper>
+            <div className="mb-5 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/15">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Offline Mode Active — all note reads, creates, and edits are
+                stored locally and will auto-sync once you&apos;re back
+                online.
+              </p>
+            </div>
           )}
 
-          {/* Breadcrumb Navigation (Hidden on Home Page & Mobile View) */}
-        {!isMobile && location.pathname !== "/" && (
-          <Box sx={{ mb: 2 }}>
-            <Breadcrumbs aria-label="breadcrumb">
-              <MuiLink color="inherit" href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} sx={{ textDecoration: "none", fontWeight: 500 }}>
+          {pathnames.length > 0 && (
+            <div className="mb-4 px-10 hidden items-center gap-1.5 text-sm text-muted-foreground md:flex">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="font-medium hover:text-foreground"
+              >
                 Home
-              </MuiLink>
+              </button>
               {pathnames.map((value, index) => {
                 const last = index === pathnames.length - 1;
                 const to = `/${pathnames.slice(0, index + 1).join("/")}`;
-
-                return last ? (
-                  <Typography color="text.primary" key={to} sx={{ fontWeight: 700, textTransform: "capitalize" }}>
-                    {value}
-                  </Typography>
-                ) : (
-                  <MuiLink color="inherit" href="#" onClick={(e) => { e.preventDefault(); navigate(to); }} key={to} sx={{ textDecoration: "none", textTransform: "capitalize" }}>
-                    {value}
-                  </MuiLink>
+                return (
+                  <span key={to} className="flex items-center gap-1.5">
+                    <span>/</span>
+                    {last ? (
+                      <span className="font-semibold text-foreground capitalize">
+                        {value}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => router.push(to)}
+                        className="capitalize hover:text-foreground"
+                      >
+                        {value}
+                      </button>
+                    )}
+                  </span>
                 );
               })}
-            </Breadcrumbs>
-          </Box>
-        )}
+            </div>
+          )}
 
-        {settings?.general?.maintenanceMode && !isSuperAdmin(currentUser) ? (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              my: 4,
-              borderRadius: 4,
-              textAlign: "center",
-              bgcolor: mode === "dark" ? "rgba(234, 179, 8, 0.15)" : "#FEF3C7",
-              border: "1px solid",
-              borderColor: mode === "dark" ? "rgba(234, 179, 8, 0.3)" : "#FDE68A",
-            }}
-          >
-            <Typography variant="h5" fontWeight={800} color={mode === "dark" ? "#FDE047" : "#92400E"} gutterBottom>
-              🛠️ Platform Maintenance Mode
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: "auto" }}>
-              {settings?.general?.maintenanceMessage || "OpenNotes is currently undergoing scheduled platform maintenance. Please check back shortly."}
-            </Typography>
-          </Paper>
-        ) : (
-          <Outlet />
-        )}
-        </Container>
-      </Box>
+          {settings?.general?.maintenanceMode && !isSuperAdmin(currentUser) ? (
+            <div className="my-4 rounded-2xl border border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-500/30 dark:bg-amber-500/15">
+              <h2 className="text-xl font-extrabold text-amber-800 dark:text-amber-300">
+                Platform Maintenance Mode
+              </h2>
+              <p className="mx-auto mt-2 max-w-150 text-muted-foreground">
+                {settings?.general?.maintenanceMessage ||
+                  "OpenNotes is currently undergoing scheduled platform maintenance. Please check back shortly."}
+              </p>
+            </div>
+          ) : (
+            <div className="px-10">
+              {children}
+              </div>
+          )}
+        </div>
+      </main>
 
-      {/* ─── iOS 18 / HIG INSPIRED FLOATING GLASS BOTTOM NAVIGATION CAPSULE (MOBILE ONLY) ─── */}
-      {isMobile && !isViewingNote && (
-        <Paper
-          elevation={0}
-          sx={{
-            position: "fixed",
-            bottom: "max(8px, env(safe-area-inset-bottom, 0px))",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "calc(100% - 24px)",
-            maxWidth: 420,
-            height: 72,
-            zIndex: 1400,
-            borderRadius: "28px",
-            p: "6px 8px",
-            display: "flex",
-            alignItems: "center",
-            boxSizing: "border-box",
-            bgcolor: mode === "dark" ? "rgba(26, 27, 30, 0.85)" : "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            border: "1px solid",
-            borderColor: mode === "dark" ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)",
-            boxShadow: mode === "dark" 
-              ? "0 12px 36px rgba(0,0,0,0.5), 0 2px 10px rgba(0,0,0,0.3)" 
-              : "0 12px 36px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04)",
-            transition: "all 0.2s cubic-bezier(0.2, 0, 0, 1)",
-          }}
+      {/* Mobile floating bottom nav */}
+      {!isViewingNote && (
+        <div
+          className="fixed left-1/2 z-40 flex h-18 w-[calc(100%-40px)] max-w-105 -translate-x-1/2 items-center rounded-[28px] border border-border bg-background/85 px-2 shadow-lg backdrop-blur-xl md:hidden"
+          style={{ bottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-around" sx={{ width: "100%", height: "100%" }}>
-            {[
-              { label: "Home", icon: <DashboardIcon sx={{ fontSize: 22 }} />, path: "/" },
-              { label: "Notes", icon: <NotesIcon sx={{ fontSize: 22 }} />, path: "/notes" },
-              { label: "Discover", icon: <ExploreIcon sx={{ fontSize: 22 }} />, path: "/discover" },
-              { label: "Bookmarks", icon: <BookmarkIcon sx={{ fontSize: 22 }} />, path: "/bookmarks" },
-              { label: "Search", icon: <SearchIcon sx={{ fontSize: 22 }} />, path: "/search" },
-            ].map((tab) => {
-              const isSelected = location.pathname === tab.path;
+          <div className="flex w-full items-center justify-around">
+            {BOTTOM_NAV_ITEMS.map((tab) => {
+              const isSelected = Boolean(tab.path) && pathname === tab.path;
+              const Icon = tab.icon;
               return (
-                <Box
+                <button
                   key={tab.label}
-                  onClick={() => navigate(tab.path)}
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    py: 0.5,
-                    px: 0.5,
-                    minHeight: 48,
-                    height: "100%",
-                    borderRadius: "20px",
-                    cursor: "pointer",
-                    userSelect: "none",
-                    bgcolor: isSelected 
-                      ? (mode === "dark" ? alpha(theme.palette.primary.main, 0.22) : alpha(theme.palette.primary.main, 0.12))
-                      : "transparent",
-                    color: isSelected ? "primary.main" : "text.secondary",
-                    transition: "all 180ms cubic-bezier(0.2, 0, 0, 1)",
-                    "&:active": { transform: "scale(0.94)" },
-                  }}
+                  onClick={() => (tab.action === "menu" ? setMobileNavOpen(true) : router.push(tab.path))}
+                  className={cn(
+                    "flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] py-1 transition-transform active:scale-95",
+                    isSelected
+                      ? "bg-primary/12 text-primary"
+                      : "text-muted-foreground"
+                  )}
                 >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "transform 180ms ease-out",
-                      transform: isSelected ? "scale(1.08)" : "scale(1)",
-                    }}
-                  >
-                    {tab.icon}
-                  </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: "0.68rem",
-                      fontWeight: isSelected ? 700 : 500,
-                      letterSpacing: "-0.01em",
-                      mt: 0.25,
-                      opacity: isSelected ? 1 : 0.75,
-                      transition: "opacity 180ms ease-out",
-                    }}
+                  <Icon
+                    className={cn(
+                      "size-5.5 transition-transform",
+                      isSelected && "scale-110"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      isSelected ? "font-bold" : "font-medium opacity-75"
+                    )}
                   >
                     {tab.label}
-                  </Typography>
-                </Box>
+                  </span>
+                </button>
               );
             })}
-          </Stack>
-        </Paper>
+          </div>
+        </div>
       )}
 
-      {/* Global AI Prompt Builder Modal */}
       <PromptBuilderModal
         open={promptModalOpen}
         onClose={() => setPromptModalOpen(false)}
       />
 
-      {/* Help & Feedback Dialog */}
-      <Dialog 
-        open={helpDialogOpen} 
-        onClose={() => setHelpDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 4, p: 1 } }}
-      >
-        <DialogTitle fontWeight={700}>Help & Feedback</DialogTitle>
+      <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Need assistance or have feedback about OpenNotes? We are here to help!
-          </Typography>
-          <Stack spacing={1.5} sx={{ mt: 1 }}>
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
-              <Typography variant="subtitle2" fontWeight={700}>Documentation & Guides</Typography>
-              <Typography variant="caption" color="text.secondary">Learn how to make the most of rich text HTML note taking.</Typography>
-            </Paper>
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
-              <Typography variant="subtitle2" fontWeight={700}>Contact Support</Typography>
-              <Typography variant="caption" color="text.secondary">Send us an email at support@opennotes.app</Typography>
-            </Paper>
-          </Stack>
+          <DialogHeader>
+            <DialogTitle>Help &amp; Feedback</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Need assistance or have feedback about OpenNotes? We are here to
+            help!
+          </p>
+          <div className="flex flex-col gap-3">
+            <div className="rounded-xl border border-border p-4">
+              <p className="text-sm font-bold">Documentation &amp; Guides</p>
+              <p className="text-xs text-muted-foreground">
+                Learn how to make the most of rich text HTML note taking.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border p-4">
+              <p className="text-sm font-bold">Contact Support</p>
+              <p className="text-xs text-muted-foreground">
+                Send us an email at support@opennotes.app
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setHelpDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setHelpDialogOpen(false)} variant="contained" fullWidth sx={{ borderRadius: 3 }}>
-            Close
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      {/* First-Time User Onboarding Wizard */}
       <OnboardingWizardModal />
-    </Box>
+    </div>
   );
 };
 

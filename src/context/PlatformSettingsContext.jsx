@@ -1,4 +1,5 @@
-/* eslint-disable react-refresh/only-export-components */
+"use client";
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { db } from "../firebase/config";
 import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
@@ -119,16 +120,17 @@ export const PlatformSettingsProvider = ({ children }) => {
           setLoading(false);
         },
         (error) => {
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== "production") {
             console.warn("PlatformSettings listener caught non-fatal error:", error);
           }
           setLoading(false);
         }
       );
     } catch (err) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("Failed to initialize PlatformSettings listener:", err);
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- ported verbatim from the Vite app
       setLoading(false);
     }
 
@@ -160,7 +162,7 @@ export const PlatformSettingsProvider = ({ children }) => {
       const docRef = doc(db, "platformSettings", "global");
       await setDoc(docRef, updated, { merge: true });
     } catch (err) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("PlatformSettings update error:", err);
       }
     }

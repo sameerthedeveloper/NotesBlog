@@ -1,4 +1,6 @@
-import React, { useEffect } from "react";
+"use client";
+
+import { useEffect } from "react";
 
 const AdSense = ({ adSlot }) => {
   useEffect(() => {

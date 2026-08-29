@@ -1,4 +1,5 @@
-/* eslint-disable react-refresh/only-export-components */
+"use client";
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 import { getCreatorMonetization, saveCreatorMonetization, updatePlacements } from "../features/monetization/services/monetizationService";
@@ -31,6 +32,7 @@ export const MonetizationProvider = ({ children }) => {
   }, [currentUser]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ported verbatim from the Vite app
     fetchMonetization();
   }, [fetchMonetization]);
 

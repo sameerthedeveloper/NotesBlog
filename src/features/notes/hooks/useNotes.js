@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { subscribeUserNotes } from "../services/notesService";
 import { useAuth } from "../../../context/AuthContext";

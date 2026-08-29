@@ -1,29 +1,17 @@
-import React, { useState } from "react";
-import {
-  Box,
-  TextField,
-  Button,
-  Stack,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Typography,
-  Chip
-} from "@mui/material";
-import {
-  Send as SendIcon,
-  Code as CodeIcon,
-  FormatBold as BoldIcon,
-  FormatItalic as ItalicIcon,
-  Close as CancelIcon
-} from "@mui/icons-material";
-import toast from "react-hot-toast";
+"use client";
+
+import { useState } from "react";
+import { Send, Code, Bold, Italic, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const ReplyComposer = ({
   onSubmit,
   parentReplyAuthor = null,
   onCancelParent = null,
-  placeholder = "Write a constructive reply..."
+  placeholder = "Write a constructive reply...",
 }) => {
   const [content, setContent] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
@@ -45,14 +33,14 @@ const ReplyComposer = ({
     try {
       await onSubmit({
         content: content.trim(),
-        codeSnippet: codeSnippet.trim()
+        codeSnippet: codeSnippet.trim(),
       });
       setContent("");
       setCodeSnippet("");
       setShowCode(false);
       if (onCancelParent) onCancelParent();
     } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
+      if (process.env.NODE_ENV !== "production") console.error(err);
       toast.error("Failed to post reply.");
     } finally {
       setSubmitting(false);
@@ -60,101 +48,78 @@ const ReplyComposer = ({
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        p: 2.5,
-        borderRadius: 3,
-        bgcolor: "background.paper",
-        border: "1px solid",
-        borderColor: "divider"
-      }}
-    >
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-card p-4">
       {parentReplyAuthor && (
-        <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
-          <Chip
-            size="small"
-            label={`Replying to @${parentReplyAuthor}`}
-            onDelete={onCancelParent}
-            color="primary"
-            variant="outlined"
-            sx={{ fontWeight: 600, borderRadius: 2 }}
-          />
-        </Stack>
+        <div className="mb-3 flex items-center gap-1.5">
+          <Badge variant="outline" className="gap-1.5 font-semibold text-primary">
+            Replying to @{parentReplyAuthor}
+            <button type="button" onClick={onCancelParent} className="text-muted-foreground hover:text-foreground">
+              ×
+            </button>
+          </Badge>
+        </div>
       )}
 
-      <Stack spacing={1.5}>
-        <TextField
-          multiline
-          minRows={3}
-          maxRows={8}
-          fullWidth
+      <div className="flex flex-col gap-3">
+        <Textarea
+          rows={3}
           placeholder={placeholder}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 2.5,
-              fontSize: "0.95rem"
-            }
-          }}
+          className="text-sm"
         />
 
         {showCode && (
-          <TextField
-            multiline
+          <Textarea
             rows={4}
-            fullWidth
             placeholder="// Paste code snippet or LaTeX here..."
             value={codeSnippet}
             onChange={(e) => setCodeSnippet(e.target.value)}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-                fontFamily: "monospace",
-                fontSize: "0.85rem",
-                bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.03)"
-              }
-            }}
+            className="bg-muted font-mono text-sm"
           />
         )}
 
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Bold (**text**)">
-              <IconButton size="small" onClick={() => handleInsertFormatting("**", "**")}>
-                <BoldIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Italic (*text*)">
-              <IconButton size="small" onClick={() => handleInsertFormatting("*", "*")}>
-                <ItalicIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Toggle Code Snippet">
-              <IconButton
-                size="small"
-                color={showCode ? "primary" : "default"}
-                onClick={() => setShowCode(!showCode)}
-              >
-                <CodeIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              title="Bold (**text**)"
+              onClick={() => handleInsertFormatting("**", "**")}
+            >
+              <Bold className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              title="Italic (*text*)"
+              onClick={() => handleInsertFormatting("*", "*")}
+            >
+              <Italic className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={showCode ? "size-8 bg-primary/10 text-primary" : "size-8"}
+              title="Toggle Code Snippet"
+              onClick={() => setShowCode(!showCode)}
+            >
+              <Code className="size-4" />
+            </Button>
+          </div>
 
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={submitting}
-            endIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
-            sx={{ borderRadius: 2.5, fontWeight: 700, px: 3 }}
-          >
+          <Button type="submit" disabled={submitting}>
             {submitting ? "Posting..." : "Reply"}
+            {submitting ? <Loader2 className="animate-spin" /> : <Send />}
           </Button>
-        </Stack>
-      </Stack>
-    </Box>
+        </div>
+      </div>
+    </form>
   );
 };
 

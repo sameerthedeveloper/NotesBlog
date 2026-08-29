@@ -1,39 +1,22 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Stack,
-  Avatar,
-  TextField,
-  IconButton,
-  Button,
-  Chip,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  CircularProgress,
-  Tooltip,
-  Divider
-} from "@mui/material";
-import {
-  Send as SendIcon,
-  Tag as ChannelIcon,
-  Code as CodeIcon,
-  DeleteOutline as DeleteIcon,
-  Group as GroupIcon
-} from "@mui/icons-material";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Send, Hash, Code, Trash2, Users, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   DEFAULT_CHAT_ROOMS,
   subscribeChatRooms,
   subscribeChatMessages,
   sendChatMessage,
-  deleteChatMessage
+  deleteChatMessage,
 } from "../services/communityService";
-import toast from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
   const [rooms, setRooms] = useState(DEFAULT_CHAT_ROOMS);
@@ -50,15 +33,14 @@ const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
 
   const messagesEndRef = useRef(null);
 
-  // Sync selectedRoom if initialRoomId prop changes
   useEffect(() => {
     if (initialRoomId) {
       const match = rooms.find((r) => r.id === initialRoomId);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing selection from a prop-driven initial id
       if (match) setSelectedRoom(match);
     }
   }, [initialRoomId, rooms]);
 
-  // Subscribe to room list
   useEffect(() => {
     const unsubRooms = subscribeChatRooms((fetchedRooms) => {
       setRooms(fetchedRooms);
@@ -66,10 +48,10 @@ const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
     return () => unsubRooms();
   }, []);
 
-  // Subscribe to messages in current room
   useEffect(() => {
     if (!selectedRoom?.id) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting load state before a real-time Firestore subscription
     setLoading(true);
     const unsubMessages = subscribeChatMessages(selectedRoom.id, (fetchedMsgs) => {
       setMessages(fetchedMsgs);
@@ -79,7 +61,6 @@ const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
     return () => unsubMessages();
   }, [selectedRoom?.id]);
 
-  // Auto-scroll on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -100,7 +81,7 @@ const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
       setCodeSnippet("");
       setShowCodeInput(false);
     } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
+      if (process.env.NODE_ENV !== "production") console.error(err);
       toast.error("Failed to send message.");
     } finally {
       setSending(false);
@@ -117,240 +98,140 @@ const GroupChatView = ({ currentUser, userProfile, initialRoomId = null }) => {
   };
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        borderRadius: 4,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        height: { xs: "auto", md: "680px" }
-      }}
-    >
+    <div className="flex flex-col overflow-hidden rounded-3xl border border-border md:h-[680px] md:flex-row">
       {/* Channels Sidebar */}
-      <Box
-        sx={{
-          width: { xs: "100%", md: "260px" },
-          borderRight: { md: "1px solid" },
-          borderBottom: { xs: "1px solid", md: "none" },
-          borderColor: "divider",
-          bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
-          p: 2
-        }}
-      >
-        <Typography variant="overline" fontWeight={800} color="text.secondary" px={1} mb={1} display="block">
+      <div className="border-b border-border bg-muted/30 p-3 md:w-64 md:border-r md:border-b-0">
+        <p className="mb-2 px-1 text-xs font-extrabold tracking-wide text-muted-foreground">
           PUBLIC CHANNELS
-        </Typography>
+        </p>
 
-        <Stack spacing={0.5}>
+        <div className="flex flex-col gap-0.5">
           {rooms.map((room) => {
             const isSelected = selectedRoom.id === room.id;
             return (
-              <Button
+              <button
                 key={room.id}
-                fullWidth
-                variant={isSelected ? "contained" : "text"}
-                color={isSelected ? "primary" : "inherit"}
-                startIcon={<ChannelIcon />}
                 onClick={() => setSelectedRoom(room)}
-                sx={{
-                  justifyContent: "flex-start",
-                  borderRadius: 2.5,
-                  fontWeight: isSelected ? 800 : 600,
-                  textTransform: "none",
-                  px: 2,
-                  py: 1
-                }}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl px-3 py-2 text-left text-sm",
+                  isSelected ? "bg-primary font-extrabold text-primary-foreground" : "font-semibold text-foreground hover:bg-muted"
+                )}
               >
-                #{room.name}
-              </Button>
+                <Hash className="size-4 shrink-0" />
+                {room.name}
+              </button>
             );
           })}
-        </Stack>
-      </Box>
+        </div>
+      </div>
 
       {/* Main Chat Stream */}
-      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", height: "100%" }}>
-        {/* Channel Top Header */}
-        <Box
-          sx={{
-            p: 2,
-            px: 3,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}
-        >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <ChannelIcon color="primary" />
-            <Box>
-              <Typography variant="h6" fontWeight={800} fontSize="1.05rem">
-                #{selectedRoom.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {selectedRoom.description}
-              </Typography>
-            </Box>
-          </Stack>
+      <div className="flex flex-1 flex-col">
+        <div className="flex items-center justify-between border-b border-border p-3 px-4">
+          <div className="flex items-center gap-2.5">
+            <Hash className="size-5 text-primary" />
+            <div>
+              <p className="text-[1.05rem] font-extrabold">#{selectedRoom.name}</p>
+              <p className="text-xs text-muted-foreground">{selectedRoom.description}</p>
+            </div>
+          </div>
 
-          <Chip
-            icon={<GroupIcon sx={{ fontSize: "16px !important" }} />}
-            label="Live Public Room"
-            size="small"
-            color="success"
-            variant="outlined"
-            sx={{ fontWeight: 700, borderRadius: 2 }}
-          />
-        </Box>
+          <Badge variant="outline" className="gap-1.5 font-semibold text-emerald-600">
+            <Users className="size-3.5" />
+            Live Public Room
+          </Badge>
+        </div>
 
-        {/* Message Stream */}
-        <Box sx={{ flexGrow: 1, p: 3, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", my: "auto" }}>
-              <CircularProgress size={32} />
-            </Box>
+            <div className="m-auto">
+              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            </div>
           ) : messages.length === 0 ? (
-            <Box sx={{ textAlign: "center", my: "auto", color: "text.secondary", py: 6 }}>
-              <Typography variant="subtitle1" fontWeight={700}>
-                Welcome to #{selectedRoom.name}!
-              </Typography>
-              <Typography variant="body2">
-                This room is empty. Send a message to start the conversation.
-              </Typography>
-            </Box>
+            <div className="m-auto py-10 text-center text-muted-foreground">
+              <p className="font-bold">Welcome to #{selectedRoom.name}!</p>
+              <p className="text-sm">This room is empty. Send a message to start the conversation.</p>
+            </div>
           ) : (
             messages.map((msg) => {
               const isMine = currentUser?.uid === msg.authorId;
               return (
-                <Box
-                  key={msg.id}
-                  sx={{
-                    display: "flex",
-                    gap: 1.5,
-                    alignItems: "flex-start",
-                    flexDirection: isMine ? "row-reverse" : "row"
-                  }}
-                >
-                  <Avatar
-                    src={msg.authorPhoto}
-                    sx={{ width: 34, height: 34, bgcolor: "primary.main", fontWeight: 700, fontSize: "0.85rem" }}
-                  >
-                    {msg.authorName?.charAt(0) || "U"}
+                <div key={msg.id} className={cn("flex items-start gap-2.5", isMine && "flex-row-reverse")}>
+                  <Avatar className="size-8.5">
+                    <AvatarImage src={msg.authorPhoto || undefined} />
+                    <AvatarFallback className="text-xs">{msg.authorName?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
 
-                  <Box sx={{ maxWidth: "75%" }}>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      mb={0.5}
-                      justifyContent={isMine ? "flex-end" : "flex-start"}
-                    >
-                      <Typography variant="caption" fontWeight={700} color="text.primary">
-                        {msg.authorName || "Anonymous"}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
+                  <div className="max-w-[75%]">
+                    <div className={cn("mb-1 flex items-center gap-1.5", isMine && "flex-row-reverse")}>
+                      <span className="text-xs font-bold">{msg.authorName || "Anonymous"}</span>
+                      <span className="text-[11px] text-muted-foreground">
                         {msg.createdAt?.toDate ? formatDistanceToNow(msg.createdAt.toDate()) + " ago" : "Just now"}
-                      </Typography>
+                      </span>
                       {isMine && (
-                        <IconButton size="small" onClick={() => handleDeleteMessage(msg.id)} sx={{ p: 0.2 }}>
-                          <DeleteIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-                        </IconButton>
+                        <button onClick={() => handleDeleteMessage(msg.id)} className="text-muted-foreground hover:text-destructive">
+                          <Trash2 className="size-3.5" />
+                        </button>
                       )}
-                    </Stack>
+                    </div>
 
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 1.8,
-                        px: 2.2,
-                        borderRadius: isMine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                        bgcolor: isMine
-                          ? "primary.main"
-                          : (theme) => theme.palette.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-                        color: isMine ? "primary.contrastText" : "text.primary"
-                      }}
+                    <div
+                      className={cn(
+                        "rounded-2xl px-3.5 py-2 text-sm",
+                        isMine ? "rounded-tr-sm bg-primary text-primary-foreground" : "rounded-tl-sm bg-muted"
+                      )}
                     >
-                      <Typography variant="body2" sx={{ whitespace: "pre-wrap", wordBreak: "break-word" }}>
-                        {msg.text}
-                      </Typography>
+                      <p className="wrap-break-word whitespace-pre-wrap">{msg.text}</p>
 
                       {msg.codeSnippet && (
-                        <Box
-                          component="pre"
-                          sx={{
-                            p: 1.5,
-                            mt: 1,
-                            borderRadius: 2,
-                            bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.08)",
-                            fontFamily: "monospace",
-                            fontSize: "0.8rem",
-                            overflowX: "auto"
-                          }}
-                        >
+                        <pre className="mt-2 overflow-x-auto rounded-lg bg-black/10 p-2.5 font-mono text-xs">
                           <code>{msg.codeSnippet}</code>
-                        </Box>
+                        </pre>
                       )}
-                    </Paper>
-                  </Box>
-                </Box>
+                    </div>
+                  </div>
+                </div>
               );
             })
           )}
           <div ref={messagesEndRef} />
-        </Box>
+        </div>
 
-        {/* Input Composer */}
-        <Box component="form" onSubmit={handleSendMessage} sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+        <form onSubmit={handleSendMessage} className="border-t border-border p-3">
           {showCodeInput && (
-            <TextField
-              multiline
+            <Textarea
               rows={3}
-              fullWidth
               placeholder="// Paste code snippet..."
               value={codeSnippet}
               onChange={(e) => setCodeSnippet(e.target.value)}
-              sx={{
-                mb: 1.5,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  fontFamily: "monospace",
-                  fontSize: "0.85rem"
-                }
-              }}
+              className="mb-2 font-mono text-sm"
             />
           )}
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title="Attach Code Snippet">
-              <IconButton color={showCodeInput ? "primary" : "default"} onClick={() => setShowCodeInput(!showCodeInput)}>
-                <CodeIcon />
-              </IconButton>
-            </Tooltip>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={showCodeInput ? "text-primary" : "text-muted-foreground"}
+              onClick={() => setShowCodeInput(!showCodeInput)}
+            >
+              <Code />
+            </Button>
 
-            <TextField
-              fullWidth
-              size="small"
+            <Input
               placeholder={`Message #${selectedRoom.name}...`}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
             />
 
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={sending || (!inputMessage.trim() && !codeSnippet.trim())}
-              sx={{ borderRadius: 3, px: 2.5, height: 40 }}
-            >
-              {sending ? <CircularProgress size={18} color="inherit" /> : <SendIcon fontSize="small" />}
+            <Button type="submit" disabled={sending || (!inputMessage.trim() && !codeSnippet.trim())}>
+              {sending ? <Loader2 className="animate-spin" /> : <Send />}
             </Button>
-          </Stack>
-        </Box>
-      </Box>
-    </Paper>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 

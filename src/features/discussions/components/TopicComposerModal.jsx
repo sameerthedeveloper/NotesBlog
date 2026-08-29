@@ -1,27 +1,27 @@
-import React, { useState } from "react";
+"use client";
+
+import { useState } from "react";
+import { MessageSquarePlus, Loader2 } from "lucide-react";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Typography,
-  Stack,
-  Chip,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  CircularProgress
-} from "@mui/material";
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
-  AddComment as TopicIcon,
-  Code as CodeIcon,
-  LocalOffer as TagIcon
-} from "@mui/icons-material";
-import toast from "react-hot-toast";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 const CATEGORIES = [
   "General",
@@ -29,7 +29,7 @@ const CATEGORIES = [
   "Feedback & Suggestions",
   "Code & Technical",
   "Study Group & Notes",
-  "Bug Report"
+  "Bug Report",
 ];
 
 const TopicComposerModal = ({ open, onClose, onSubmit }) => {
@@ -69,7 +69,7 @@ const TopicComposerModal = ({ open, onClose, onSubmit }) => {
         title: title.trim(),
         category,
         content: content.trim(),
-        tags
+        tags,
       });
       setTitle("");
       setContent("");
@@ -77,7 +77,7 @@ const TopicComposerModal = ({ open, onClose, onSubmit }) => {
       setTagInput("");
       onClose();
     } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
+      if (process.env.NODE_ENV !== "production") console.error(err);
       toast.error("Failed to create topic.");
     } finally {
       setSubmitting(false);
@@ -85,113 +85,98 @@ const TopicComposerModal = ({ open, onClose, onSubmit }) => {
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 3, p: 1 }
-      }}
-    >
-      <DialogTitle sx={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 1.5 }}>
-        <TopicIcon color="primary" />
-        Start a New Discussion Topic
-      </DialogTitle>
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageSquarePlus className="text-primary" />
+            Start a New Discussion Topic
+          </DialogTitle>
+        </DialogHeader>
 
-      <Box component="form" onSubmit={handleSubmit}>
-        <DialogContent dividers sx={{ borderColor: "divider" }}>
-          <Stack spacing={3}>
-            <TextField
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="topic-title">Topic Title</Label>
+            <Input
+              id="topic-title"
               autoFocus
-              label="Topic Title"
               placeholder="What would you like to discuss or ask about this note?"
-              fullWidth
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
+          </div>
 
-            <FormControl fullWidth sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={category}
-                label="Category"
-                onChange={(e) => setCategory(e.target.value)}
-              >
+          <div className="flex flex-col gap-1.5">
+            <Label>Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {CATEGORIES.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
+                  <SelectItem key={cat} value={cat}>
                     {cat}
-                  </MenuItem>
+                  </SelectItem>
                 ))}
-              </Select>
-            </FormControl>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <TextField
-              label="Discussion Content (Markdown & Code Supported)"
-              placeholder="Provide context, questions, code snippets, or ideas..."
-              multiline
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="topic-content">Discussion Content (Markdown &amp; Code Supported)</Label>
+            <Textarea
+              id="topic-content"
               rows={6}
-              fullWidth
+              placeholder="Provide context, questions, code snippets, or ideas..."
               required
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, fontFamily: "monospace" } }}
+              className="font-mono text-sm"
             />
+          </div>
 
-            <Box>
-              <Typography variant="caption" fontWeight={700} color="text.secondary" mb={1} display="block">
-                Tags (Up to 5 tags)
-              </Typography>
-              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                <TextField
-                  size="small"
-                  placeholder="Add tag (e.g. math, code, quiz)..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                />
-                <Button variant="outlined" onClick={handleAddTag} sx={{ borderRadius: 2 }}>
-                  Add Tag
-                </Button>
-              </Stack>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {tags.map((tag) => (
-                  <Chip
-                    key={tag}
-                    label={`#${tag}`}
-                    size="small"
-                    onDelete={() => handleRemoveTag(tag)}
-                    sx={{ borderRadius: 2, fontWeight: 600 }}
-                  />
-                ))}
-              </Stack>
-            </Box>
-          </Stack>
-        </DialogContent>
+          <div>
+            <Label className="mb-2 block">Tags (Up to 5 tags)</Label>
+            <div className="mb-2 flex items-center gap-2">
+              <Input
+                placeholder="Add tag (e.g. math, code, quiz)..."
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+              />
+              <Button type="button" variant="outline" onClick={handleAddTag}>
+                Add Tag
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="gap-1 rounded-md">
+                  #{tag}
+                  <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-foreground">
+                    ×
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </div>
 
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={onClose} disabled={submitting} sx={{ borderRadius: 2, fontWeight: 700 }}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={submitting}
-            startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <TopicIcon />}
-            sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
-          >
-            {submitting ? "Posting..." : "Post Topic"}
-          </Button>
-        </DialogActions>
-      </Box>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? <Loader2 className="animate-spin" /> : <MessageSquarePlus />}
+              {submitting ? "Posting..." : "Post Topic"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
     </Dialog>
   );
 };

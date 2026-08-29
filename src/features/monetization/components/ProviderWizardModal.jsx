@@ -1,36 +1,31 @@
-import React, { useState } from "react";
+"use client";
+
+import { useState } from "react";
+import {
+  CheckCircle2,
+  BadgeCheck,
+  ArrowRight,
+  ArrowLeft,
+  TriangleAlert,
+  Loader2,
+} from "lucide-react";
+import { getAllProviders, getProviderById } from "@/features/monetization/providers";
+import { useMonetization } from "@/context/MonetizationContext";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
-  Stepper,
-  Step,
-  StepLabel,
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  TextField,
-  Alert,
-  Stack,
-  CircularProgress,
-  Chip,
-  useTheme,
-  alpha,
-} from "@mui/material";
-import {
-  CheckCircle as CheckCircleIcon,
-  Verified as VerifiedIcon,
-  ArrowForward as ArrowForwardIcon,
-  ArrowBack as ArrowBackIcon,
-  Warning as WarningIcon,
-} from "@mui/icons-material";
-import { getAllProviders, getProviderById } from "../providers";
-import { useMonetization } from "../../../context/MonetizationContext";
-import toast from "react-hot-toast";
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 const STEPS = [
   "Select Provider",
@@ -42,7 +37,6 @@ const STEPS = [
 ];
 
 export const ProviderWizardModal = ({ open, onClose, initialProviderId = null }) => {
-  const theme = useTheme();
   const { submitProviderConnection } = useMonetization();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -64,7 +58,6 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
     }
 
     if (activeStep === 2) {
-      // Validate configuration before proceeding to step 4
       const res = selectedProvider.validateConfig(formData);
       setValidationErrors(res.errors);
       if (!res.valid) {
@@ -74,7 +67,6 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
     }
 
     if (activeStep === 4) {
-      // Submit to Firebase
       setSubmitting(true);
       try {
         await submitProviderConnection(selectedProviderId, formData);
@@ -91,9 +83,7 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
     setActiveStep((prev) => prev + 1);
   };
 
-  const handleBack = () => {
-    setActiveStep((prev) => prev - 1);
-  };
+  const handleBack = () => setActiveStep((prev) => prev - 1);
 
   const handleClose = () => {
     setActiveStep(0);
@@ -102,231 +92,188 @@ export const ProviderWizardModal = ({ open, onClose, initialProviderId = null })
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 4,
-          p: { xs: 1, sm: 2 },
-          bgcolor: "background.paper",
-        },
-      }}
-    >
-      <DialogTitle>
-        <Typography variant="h5" fontWeight={800} letterSpacing="-0.5px">
-          Connect Ad Provider
-        </Typography>
-        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-          Follow the 6-step guided wizard to connect your publisher account safely.
-        </Typography>
-      </DialogTitle>
+    <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Connect Ad Provider</DialogTitle>
+          <DialogDescription>
+            Follow the 6-step guided wizard to connect your publisher account safely.
+          </DialogDescription>
+        </DialogHeader>
 
-      <DialogContent dividers sx={{ border: "none", py: 3 }}>
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
-          {STEPS.map((label) => (
-            <Step key={label}>
-              <StepLabel
-                StepIconProps={{
-                  sx: {
-                    "&.Mui-active": { color: "primary.main" },
-                    "&.Mui-completed": { color: "success.main" },
-                  },
-                }}
+        {/* Step indicator */}
+        <div className="mb-2 flex items-center gap-1 overflow-x-auto pb-1">
+          {STEPS.map((label, idx) => (
+            <div key={label} className="flex flex-1 items-center gap-1">
+              <div
+                className={cn(
+                  "flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                  idx < activeStep
+                    ? "bg-success text-success-foreground"
+                    : idx === activeStep
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}
               >
-                <Typography variant="caption" fontWeight={600}>
-                  {label}
-                </Typography>
-              </StepLabel>
-            </Step>
+                {idx + 1}
+              </div>
+              {idx < STEPS.length - 1 && <div className="h-px flex-1 bg-border" />}
+            </div>
           ))}
-        </Stepper>
+        </div>
+        <p className="mb-4 text-xs font-semibold text-muted-foreground">{STEPS[activeStep]}</p>
 
-        {/* Step 1: Select Provider */}
-        {activeStep === 0 && (
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-              Choose your advertising provider
-            </Typography>
-            <Grid container spacing={2}>
-              {getAllProviders().map((p) => {
-                const isSelected = selectedProviderId === p.id;
-                return (
-                  <Grid size={{ xs: 12, sm: 6 }} key={p.id}>
-                    <Card
-                      variant="outlined"
+        <div className="max-h-[50vh] overflow-y-auto">
+          {activeStep === 0 && (
+            <div>
+              <h3 className="mb-3 text-sm font-bold">Choose your advertising provider</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {getAllProviders().map((p) => {
+                  const isSelected = selectedProviderId === p.id;
+                  return (
+                    <button
+                      key={p.id}
                       onClick={() => setSelectedProviderId(p.id)}
-                      sx={{
-                        cursor: "pointer",
-                        borderRadius: 3,
-                        borderColor: isSelected ? "primary.main" : "divider",
-                        borderWidth: isSelected ? 2 : 1,
-                        bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.05) : "background.paper",
-                        transition: "all 0.15s ease",
-                        "&:hover": { borderColor: "primary.main" },
-                      }}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition-colors hover:border-primary",
+                        isSelected ? "border-2 border-primary bg-primary/5" : "border-border"
+                      )}
                     >
-                      <CardContent sx={{ p: 2.5 }}>
-                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
-                          <Box
-                            component="img"
-                            src={p.logo}
-                            alt={p.name}
-                            onError={(e) => { e.target.src = "/logo.svg"; }}
-                            sx={{ width: 36, height: 36, objectFit: "contain", borderRadius: 1 }}
-                          />
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="subtitle2" fontWeight={800}>
-                              {p.name}
-                            </Typography>
-                            <Chip label={p.category} size="small" sx={{ fontSize: "0.68rem", height: 20 }} />
-                          </Box>
-                          {isSelected && <CheckCircleIcon color="primary" />}
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary" lineHeight={1.4} display="block">
-                          {p.description}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Box>
-        )}
+                      <div className="mb-1.5 flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- external provider logo URLs, not static assets */}
+                        <img
+                          src={p.logo}
+                          alt={p.name}
+                          width={36}
+                          height={36}
+                          className="object-contain"
+                          onError={(e) => { e.currentTarget.src = "/logo.svg"; }}
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-extrabold">{p.name}</p>
+                          <Badge variant="secondary" className="h-5 text-[11px]">{p.category}</Badge>
+                        </div>
+                        {isSelected && <CheckCircle2 className="text-primary" />}
+                      </div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{p.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-        {/* Step 2: Read Requirements */}
-        {activeStep === 1 && selectedProvider && (
-          <Stack spacing={2.5}>
-            <Alert severity="info" sx={{ borderRadius: 3 }}>
-              You are connecting <strong>{selectedProvider.name}</strong> to your OpenNotes creator profile.
-            </Alert>
-            <Typography variant="subtitle1" fontWeight={700}>
-              Provider Requirements & Eligibility Checklist
-            </Typography>
-            <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <CheckCircleIcon sx={{ color: "success.main", fontSize: 20 }} />
-                <Typography variant="body2">Active approved account on {selectedProvider.name}</Typography>
-              </Stack>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <CheckCircleIcon sx={{ color: "success.main", fontSize: 20 }} />
-                <Typography variant="body2">Adherence to platform content policy & Terms of Service</Typography>
-              </Stack>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <CheckCircleIcon sx={{ color: "success.main", fontSize: 20 }} />
-                <Typography variant="body2">Valid Publisher ID / Customer ID ready to insert</Typography>
-              </Stack>
-            </Stack>
-          </Stack>
-        )}
+          {activeStep === 1 && selectedProvider && (
+            <div className="flex flex-col gap-3">
+              <Alert>
+                <AlertDescription>
+                  You are connecting <strong>{selectedProvider.name}</strong> to your OpenNotes creator profile.
+                </AlertDescription>
+              </Alert>
+              <h3 className="text-sm font-bold">Provider Requirements &amp; Eligibility Checklist</h3>
+              <div className="flex flex-col gap-2">
+                {[
+                  `Active approved account on ${selectedProvider.name}`,
+                  "Adherence to platform content policy & Terms of Service",
+                  "Valid Publisher ID / Customer ID ready to insert",
+                ].map((line) => (
+                  <div key={line} className="flex items-center gap-2.5">
+                    <CheckCircle2 className="size-4 text-emerald-500" />
+                    <span className="text-sm">{line}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Step 3: Enter Publisher Details */}
-        {activeStep === 2 && selectedProvider && (
-          <Stack spacing={2.5}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              Enter {selectedProvider.name} Credentials
-            </Typography>
-            {selectedProvider.getRequiredFields().map((field) => (
-              <TextField
-                key={field.name}
-                label={field.label}
-                required={field.required}
-                placeholder={field.placeholder}
-                helperText={validationErrors[field.name] || field.helpText}
-                error={Boolean(validationErrors[field.name])}
-                value={formData[field.name] || ""}
-                onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                fullWidth
-              />
-            ))}
-          </Stack>
-        )}
+          {activeStep === 2 && selectedProvider && (
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-bold">Enter {selectedProvider.name} Credentials</h3>
+              {selectedProvider.getRequiredFields().map((field) => (
+                <div key={field.name} className="flex flex-col gap-1.5">
+                  <Label htmlFor={field.name}>{field.label}</Label>
+                  <Input
+                    id={field.name}
+                    required={field.required}
+                    placeholder={field.placeholder}
+                    value={formData[field.name] || ""}
+                    onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                    aria-invalid={Boolean(validationErrors[field.name])}
+                  />
+                  <p className={cn("text-xs", validationErrors[field.name] ? "text-destructive" : "text-muted-foreground")}>
+                    {validationErrors[field.name] || field.helpText}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* Step 4: Validate Configuration */}
-        {activeStep === 3 && (
-          <Stack spacing={2.5}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              Configuration Summary & Validation
-            </Typography>
-            <Alert severity="success" icon={<VerifiedIcon />} sx={{ borderRadius: 3 }}>
-              Provider parameters formatted correctly! Ready for verification submission.
-            </Alert>
-            <Card variant="outlined" sx={{ borderRadius: 3, p: 2.5 }}>
-              <Stack spacing={1.5}>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" color="text.secondary">Provider</Typography>
-                  <Typography variant="body2" fontWeight={700}>{selectedProvider.name}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" color="text.secondary">Publisher ID</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formData.publisherId}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" color="text.secondary">Publisher Name</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formData.publisherName}</Typography>
-                </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" color="text.secondary">Account Email</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formData.publisherEmail}</Typography>
-                </Stack>
-              </Stack>
-            </Card>
-          </Stack>
-        )}
+          {activeStep === 3 && (
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-bold">Configuration Summary &amp; Validation</h3>
+              <Alert className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                <BadgeCheck className="size-4" />
+                <AlertDescription className="text-emerald-600 dark:text-emerald-400">
+                  Provider parameters formatted correctly! Ready for verification submission.
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-col gap-2 rounded-2xl border border-border p-4">
+                {[
+                  ["Provider", selectedProvider?.name],
+                  ["Publisher ID", formData.publisherId],
+                  ["Publisher Name", formData.publisherName],
+                  ["Account Email", formData.publisherEmail],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-bold">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Step 5: Submit Verification */}
-        {activeStep === 4 && (
-          <Stack spacing={2.5} alignItems="center" textAlign="center" sx={{ py: 2 }}>
-            <WarningIcon sx={{ fontSize: 56, color: "warning.main" }} />
-            <Typography variant="h6" fontWeight={800}>
-              Submit Request for Review?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 460 }}>
-              Our platform security engine will verify your publisher configuration. Once verified, ads will automatically render on your enabled placements.
-            </Typography>
-          </Stack>
-        )}
+          {activeStep === 4 && (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <TriangleAlert className="size-14 text-amber-500" />
+              <h3 className="text-lg font-extrabold">Submit Request for Review?</h3>
+              <p className="max-w-md text-sm text-muted-foreground">
+                Our platform security engine will verify your publisher configuration. Once verified, ads will automatically render on your enabled placements.
+              </p>
+            </div>
+          )}
 
-        {/* Step 6: Confirmation */}
-        {activeStep === 5 && (
-          <Stack spacing={2.5} alignItems="center" textAlign="center" sx={{ py: 3 }}>
-            <CheckCircleIcon sx={{ fontSize: 64, color: "success.main" }} />
-            <Typography variant="h5" fontWeight={900}>
-              Verification Pending!
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 440 }}>
-              Your {selectedProvider.name} connection request has been received. Status is now set to <strong>Pending</strong>.
-            </Typography>
-          </Stack>
-        )}
+          {activeStep === 5 && (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <CheckCircle2 className="size-16 text-emerald-500" />
+              <h3 className="text-xl font-black">Verification Pending!</h3>
+              <p className="max-w-md text-sm text-muted-foreground">
+                Your {selectedProvider?.name} connection request has been received. Status is now set to <strong>Pending</strong>.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="flex-row items-center justify-between sm:justify-between">
+          {activeStep > 0 && activeStep < 5 ? (
+            <Button variant="ghost" onClick={handleBack}>
+              <ArrowLeft />
+              Back
+            </Button>
+          ) : (
+            <span />
+          )}
+          {activeStep < 5 ? (
+            <Button onClick={handleNext} disabled={submitting}>
+              {submitting ? <Loader2 className="animate-spin" /> : null}
+              {activeStep === 4 ? "Submit For Review" : "Continue"}
+              {!submitting && <ArrowRight />}
+            </Button>
+          ) : (
+            <Button onClick={handleClose}>Done</Button>
+          )}
+        </DialogFooter>
       </DialogContent>
-
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        {activeStep > 0 && activeStep < 5 && (
-          <Button onClick={handleBack} startIcon={<ArrowBackIcon />}>
-            Back
-          </Button>
-        )}
-        <Box sx={{ flex: 1 }} />
-        {activeStep < 5 ? (
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            disabled={submitting}
-            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <ArrowForwardIcon />}
-            sx={{ borderRadius: 2.5, px: 3, fontWeight: 700 }}
-          >
-            {activeStep === 4 ? "Submit For Review" : "Continue"}
-          </Button>
-        ) : (
-          <Button variant="contained" onClick={handleClose} sx={{ borderRadius: 2.5, px: 3, fontWeight: 700 }}>
-            Done
-          </Button>
-        )}
-      </DialogActions>
     </Dialog>
   );
 };

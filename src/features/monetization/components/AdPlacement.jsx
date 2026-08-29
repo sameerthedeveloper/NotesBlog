@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Box, Typography, Paper, Chip, Button, useTheme, alpha } from "@mui/material";
-import { Verified as VerifiedIcon, Security as SecurityIcon, Add as AddIcon } from "@mui/icons-material";
-import { useMonetization } from "../../../context/MonetizationContext";
-import { usePlatformSettings } from "../../../context/PlatformSettingsContext";
-import { getCreatorMonetization } from "../services/monetizationService";
-import { getProviderById } from "../providers";
+"use client";
+
+import { useState, useEffect } from "react";
+import { ShieldCheck, BadgeCheck, Plus } from "lucide-react";
+import { useMonetization } from "@/context/MonetizationContext";
+import { usePlatformSettings } from "@/context/PlatformSettingsContext";
+import { getCreatorMonetization } from "@/features/monetization/services/monetizationService";
+import { getProviderById } from "@/features/monetization/providers";
 import ProviderWizardModal from "./ProviderWizardModal";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Sandboxed AdPlacement component.
@@ -18,12 +21,10 @@ export const AdPlacement = ({
   creatorUid = null,
   authorId = null,
 }) => {
-  const theme = useTheme();
   const { monetizationState: ownMonetizationState } = useMonetization();
   const { settings } = usePlatformSettings();
   const [creatorMonetization, setCreatorMonetization] = useState(null);
   const [wizardOpen, setWizardOpen] = useState(false);
-  const isDark = theme.palette.mode === "dark";
 
   const targetUid = creatorUid || authorId;
 
@@ -43,7 +44,6 @@ export const AdPlacement = ({
     };
   }, [targetUid]);
 
-  // Respect Global Feature Flags from Platform Control Center
   if (settings?.advertisements?.enableAds === false) return null;
   if (targetUid && settings?.creatorMonetization?.enableCreatorMonetization === false) return null;
 
@@ -53,7 +53,6 @@ export const AdPlacement = ({
   const isVerified = isPreview || activeMonetization?.status === "verified";
   const provider = getProviderById(activeProviderId);
 
-  // If no provider connected and not in preview mode, don't display anything to readers
   if (!activeProviderId && !isPreview) {
     return null;
   }
@@ -62,89 +61,53 @@ export const AdPlacement = ({
 
   return (
     <>
-      <Paper
-        variant="outlined"
-        sx={{
-          my: 2.5,
-          p: 2,
-          borderRadius: 3,
-          borderColor: isDark ? alpha("#fff", 0.1) : alpha("#000", 0.08),
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.6) : alpha("#000", 0.015),
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-          <Typography variant="caption" fontWeight={700} color="text.disabled" letterSpacing="0.08em">
+      <div className="relative my-5 overflow-hidden rounded-2xl border border-border bg-muted/40 p-4 text-center">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[11px] font-bold tracking-widest text-muted-foreground/70">
             SPONSORED ADVERTISEMENT
-          </Typography>
-          <Chip
-            icon={<SecurityIcon sx={{ fontSize: "14px !important" }} />}
-            label={provider ? provider.name : "No Provider Connected"}
-            size="small"
-            variant="outlined"
-            sx={{ height: 20, fontSize: "0.68rem" }}
-          />
-        </Box>
+          </span>
+          <Badge variant="outline" className="h-5 gap-1 text-[11px]">
+            <ShieldCheck className="size-3.5" />
+            {provider ? provider.name : "No Provider Connected"}
+          </Badge>
+        </div>
 
-        {/* Container Box */}
-        <Box
-          sx={{
-            minHeight: 100,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            border: `1px dashed ${isDark ? alpha("#fff", 0.15) : alpha("#000", 0.15)}`,
-            borderRadius: 2,
-            p: 2,
-            bgcolor: isDark ? alpha("#000", 0.2) : alpha("#fff", 0.6),
-          }}
-        >
+        <div className="flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background/60 p-4">
           {!activeProviderId ? (
-            <Box sx={{ py: 1 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 1 }}>
+            <div className="py-1">
+              <p className="mb-1.5 text-sm font-bold text-muted-foreground">
                 No Advertising Provider Connected
-              </Typography>
-              <Typography variant="caption" color="text.disabled" display="block" sx={{ mb: 1.5 }}>
+              </p>
+              <p className="mb-3 text-xs text-muted-foreground/70">
                 Connect AdSense, Ad Manager, Media.net, Carbon, or a custom network to show ads.
-              </Typography>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setWizardOpen(true)}
-                sx={{ borderRadius: 2, fontWeight: 700 }}
-              >
+              </p>
+              <Button size="sm" onClick={() => setWizardOpen(true)}>
+                <Plus />
                 Connect Ad Provider
               </Button>
-            </Box>
+            </div>
           ) : isVerified ? (
-            <Box sx={{ width: "100%" }}>
-              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+            <div className="w-full">
+              <p className="text-sm font-bold text-primary">
                 {provider?.name || "Active Ad Unit"} ({placement})
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Publisher: {activeMonetization?.publisherId} · Slot: {slotId || "default_slot"}
-              </Typography>
-            </Box>
+              </p>
+            </div>
           ) : (
-            <Box>
-              <Chip
-                icon={<VerifiedIcon sx={{ fontSize: "14px !important" }} />}
-                label="Pending Creator Verification"
-                color="warning"
-                size="small"
-                sx={{ mb: 1, fontWeight: 700 }}
-              />
-              <Typography variant="caption" color="text.secondary" display="block">
+            <div>
+              <Badge variant="outline" className="mb-1.5 gap-1 border-amber-400 text-amber-600 dark:text-amber-400">
+                <BadgeCheck className="size-3.5" />
+                Pending Creator Verification
+              </Badge>
+              <p className="text-xs text-muted-foreground">
                 Ads will activate automatically once platform verification completes.
-              </Typography>
-            </Box>
+              </p>
+            </div>
           )}
-        </Box>
-      </Paper>
+        </div>
+      </div>
 
       <ProviderWizardModal open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </>

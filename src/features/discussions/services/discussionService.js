@@ -48,7 +48,7 @@ export const subscribeTopics = (noteId, callback) => {
       callback(topics);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeTopics primary query error (falling back to memory sort):", error);
       }
       const fallbackQuery = query(
@@ -71,7 +71,7 @@ export const subscribeTopics = (noteId, callback) => {
           callback(topics);
         },
         (fallbackErr) => {
-          if (import.meta.env.DEV) console.error("subscribeTopics fallback error:", fallbackErr);
+          if (process.env.NODE_ENV !== "production") console.error("subscribeTopics fallback error:", fallbackErr);
           callback([]);
         }
       );
@@ -109,7 +109,7 @@ export const subscribeReplies = (topicId, callback) => {
       callback(replies);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeReplies listener error:", error);
       }
       callback([]);
@@ -138,7 +138,7 @@ export const subscribeUserLikes = (userId, callback) => {
       callback(likedIds);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeUserLikes listener error:", error);
       }
       callback(new Set());

@@ -1,4 +1,4 @@
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 /**
  * Dynamically loads html2pdf.js from CDN if not already loaded.

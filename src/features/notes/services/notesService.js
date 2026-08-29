@@ -141,7 +141,7 @@ export const updateNote = async (noteId, noteData, options = {}) => {
         updatePayload.versions = [newVersion, ...existingVersions.filter(v => typeof v === "object")].slice(0, 10);
       }
     } catch (err) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("Non-critical: Version history backup omitted on update", err);
       }
     }
@@ -183,7 +183,7 @@ export const togglePin = async (noteId, isPinned, userId = null, noteData = null
       const mainDocRef = doc(db, NOTES_COLLECTION, noteId);
       await updateDoc(mainDocRef, { isPinned });
     } catch (err) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("Non-author pin stored locally in user profile", err);
       }
     }
@@ -223,7 +223,7 @@ export const toggleFavorite = async (noteId, isFavorite, userId = null, noteData
       const mainDocRef = doc(db, NOTES_COLLECTION, noteId);
       await updateDoc(mainDocRef, { isFavorite });
     } catch (err) {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("Non-author favorite stored locally in user profile", err);
       }
     }
@@ -246,7 +246,7 @@ export const subscribeUserBookmarks = (userId, callback) => {
       callback(bookmarks);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeUserBookmarks error:", error);
       }
       callback([]);
@@ -270,7 +270,7 @@ export const subscribeUserPins = (userId, callback) => {
       callback(pins);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeUserPins error:", error);
       }
       callback([]);
@@ -320,7 +320,7 @@ export const subscribeNoteById = (noteId, callback) => {
       }
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeNoteById error:", error);
       }
       callback(null);
@@ -342,7 +342,7 @@ export const subscribeNoteViews = (noteId, callback) => {
       callback(views);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeNoteViews error:", error);
       }
       callback([]);
@@ -381,7 +381,7 @@ export const subscribeUserNotes = (userId, options = {}, callback) => {
       callback(notes);
     }, 
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         if (error.code === 'failed-precondition') {
           console.warn("Firestore Index Missing for user query");
         } else {
@@ -410,7 +410,7 @@ export const subscribePublicNotes = (callback) => {
       callback(notes);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribePublicNotes error:", error);
       }
       callback([]);

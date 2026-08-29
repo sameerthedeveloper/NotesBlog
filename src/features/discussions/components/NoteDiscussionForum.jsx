@@ -1,42 +1,19 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  TextField,
-  InputAdornment,
-  Stack,
-  Chip,
-  Avatar,
-  Tab,
-  Tabs,
-  CircularProgress
-} from "@mui/material";
-import {
-  Forum as ForumIcon,
-  Add as AddIcon,
-  Search as SearchIcon,
-  Comment as CommentIcon,
-  ThumbUpOutlined as LikeIcon,
-  PushPin as PinnedIcon,
-  CheckCircle as SolvedIcon,
-  QuestionAnswer as QAIcon,
-  FilterList as FilterIcon
-} from "@mui/icons-material";
+"use client";
+
+import { useState, useEffect } from "react";
+import { MessageSquare, Plus, Search, ThumbsUp, MessageCircle, Pin, CheckCircle2, HelpCircle, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { useAuth } from "../../../context/AuthContext";
-import {
-  subscribeTopics,
-  subscribeUserLikes,
-  createTopic
-} from "../services/discussionService";
+import { useAuth } from "@/context/AuthContext";
+import { subscribeTopics, subscribeUserLikes, createTopic } from "../services/discussionService";
 import TopicComposerModal from "./TopicComposerModal";
 import DiscussionThreadView from "./DiscussionThreadView";
-import toast from "react-hot-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const NoteDiscussionForum = ({ noteId, noteAuthorId }) => {
   const { currentUser, userProfile } = useAuth();
@@ -54,6 +31,7 @@ export const NoteDiscussionForum = ({ noteId, noteAuthorId }) => {
   useEffect(() => {
     if (!noteId) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting load state before a real-time Firestore subscription
     setLoading(true);
     const unsubTopics = subscribeTopics(noteId, (fetchedTopics) => {
       setTopics(fetchedTopics);
@@ -82,7 +60,6 @@ export const NoteDiscussionForum = ({ noteId, noteAuthorId }) => {
     toast.success("Discussion topic posted!");
   };
 
-  // Filter & Search Logic
   const filteredTopics = topics.filter((t) => {
     const matchesSearch =
       !searchQuery.trim() ||
@@ -99,38 +76,19 @@ export const NoteDiscussionForum = ({ noteId, noteAuthorId }) => {
   });
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: { xs: 2.5, sm: 4 },
-        borderRadius: 4,
-        mt: 6,
-        bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"
-      }}
-    >
-      {/* Forum Header */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        justifyContent="space-between"
-        alignItems={{ xs: "flex-start", sm: "center" }}
-        spacing={2}
-        mb={3}
-      >
-        <Box>
-          <Stack direction="row" spacing={1.5} alignItems="center" mb={0.5}>
-            <ForumIcon color="primary" sx={{ fontSize: 32 }} />
-            <Typography variant="h5" fontWeight={800} letterSpacing="-0.02em">
-              Discussion Forum
-            </Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
+    <div className="mt-12 rounded-3xl border border-border bg-muted/30 p-5 sm:p-8">
+      <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <div className="mb-1 flex items-center gap-2">
+            <MessageSquare className="size-7 text-primary" />
+            <h2 className="text-xl font-extrabold tracking-tight sm:text-2xl">Discussion Forum</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
             Ask questions, share insights, collaborate, and learn together.
-          </Typography>
-        </Box>
+          </p>
+        </div>
 
         <Button
-          variant="contained"
-          startIcon={<AddIcon />}
           onClick={() => {
             if (!currentUser) {
               toast.error("Please login to start a discussion.");
@@ -138,179 +96,111 @@ export const NoteDiscussionForum = ({ noteId, noteAuthorId }) => {
             }
             setIsComposerOpen(true);
           }}
-          sx={{ borderRadius: 3, fontWeight: 700, px: 3, py: 1.2 }}
         >
+          <Plus />
           New Topic
         </Button>
-      </Stack>
+      </div>
 
-      {/* Search & Filter Bar */}
-      <Grid container spacing={2} alignItems="center" mb={3}>
-        <Grid size={{ xs: 12, md: 7 }}>
-          <TextField
-            fullWidth
-            size="small"
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
             placeholder="Search discussion topics, questions, tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              )
-            }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
+            className="pl-9"
           />
-        </Grid>
+        </div>
 
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Tabs
-            value={tabFilter}
-            onChange={(e, val) => setTabFilter(val)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              minHeight: 36,
-              "& .MuiTab-root": { minHeight: 36, textTransform: "none", fontWeight: 700, borderRadius: 2 }
-            }}
-          >
-            <Tab label={`All (${topics.length})`} value="all" />
-            <Tab label="Solved" value="solved" />
-            <Tab label="Unsolved" value="unsolved" />
-            <Tab label="Pinned" value="pinned" />
-          </Tabs>
-        </Grid>
-      </Grid>
+        <Tabs value={tabFilter} onValueChange={setTabFilter}>
+          <TabsList>
+            <TabsTrigger value="all">All ({topics.length})</TabsTrigger>
+            <TabsTrigger value="solved">Solved</TabsTrigger>
+            <TabsTrigger value="unsolved">Unsolved</TabsTrigger>
+            <TabsTrigger value="pinned">Pinned</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
-      {/* Topics List */}
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-          <CircularProgress size={36} />
-        </Box>
+        <div className="flex justify-center py-10">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
       ) : filteredTopics.length === 0 ? (
-        <Card variant="outlined" sx={{ p: 6, textAlign: "center", borderRadius: 3 }}>
-          <QAIcon sx={{ fontSize: 48, color: "text.disabled", mb: 2 }} />
-          <Typography variant="h6" fontWeight={700}>
-            No discussions found
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>
+        <div className="rounded-2xl border border-border bg-card p-12 text-center">
+          <HelpCircle className="mx-auto mb-3 size-11 text-muted-foreground/40" />
+          <h3 className="text-lg font-bold">No discussions found</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
             Be the first to start a conversation or ask a question about this note!
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={() => setIsComposerOpen(true)}
-            sx={{ borderRadius: 2.5, fontWeight: 700 }}
-          >
+          </p>
+          <Button variant="outline" onClick={() => setIsComposerOpen(true)}>
             Start First Topic
           </Button>
-        </Card>
+        </div>
       ) : (
-        <Stack spacing={2}>
+        <div className="flex flex-col gap-3">
           {filteredTopics.map((topic) => (
-            <Card
+            <button
               key={topic.id}
-              variant="outlined"
               onClick={() => setSelectedTopic(topic)}
-              sx={{
-                p: 2.5,
-                borderRadius: 3,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                borderLeft: topic.isPinned ? "4px solid" : topic.isSolved ? "4px solid" : "1px solid",
-                borderColor: topic.isPinned
-                  ? "secondary.main"
-                  : topic.isSolved
-                  ? "success.main"
-                  : "divider",
-                "&:hover": {
-                  boxShadow: (theme) => theme.shadows[3],
-                  borderColor: "primary.main"
-                }
-              }}
+              className={cn(
+                "rounded-2xl border bg-card p-4 text-left transition-all hover:border-primary/50 hover:shadow-sm",
+                topic.isPinned ? "border-l-4 border-l-primary" : topic.isSolved ? "border-l-4 border-l-emerald-500" : "border-border"
+              )}
             >
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Avatar
-                  src={topic.authorPhoto}
-                  sx={{ width: 42, height: 42, bgcolor: "primary.main", fontWeight: 700 }}
-                >
-                  {topic.authorName?.charAt(0) || "U"}
+              <div className="flex items-start gap-3">
+                <Avatar className="size-10.5">
+                  <AvatarImage src={topic.authorPhoto || undefined} />
+                  <AvatarFallback>{topic.authorName?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
 
-                <Box sx={{ flexGrow: 1 }}>
-                  <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" mb={0.5}>
-                    <Chip
-                      label={topic.category || "General"}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      sx={{ fontWeight: 700, borderRadius: 1.5, height: 22 }}
-                    />
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                    <Badge variant="outline" className="h-[22px] font-semibold text-primary">
+                      {topic.category || "General"}
+                    </Badge>
                     {topic.isPinned && (
-                      <Chip icon={<PinnedIcon />} label="Pinned" size="small" color="secondary" sx={{ fontWeight: 700, height: 22 }} />
+                      <Badge variant="secondary" className="h-[22px] gap-1"><Pin className="size-3" />Pinned</Badge>
                     )}
                     {topic.isSolved && (
-                      <Chip icon={<SolvedIcon />} label="Solved" size="small" color="success" sx={{ fontWeight: 700, height: 22 }} />
+                      <Badge className="h-[22px] gap-1 bg-success text-success-foreground"><CheckCircle2 className="size-3" />Solved</Badge>
                     )}
-                  </Stack>
+                  </div>
 
-                  <Typography variant="h6" fontWeight={700} sx={{ fontSize: "1.1rem", mb: 0.5 }}>
-                    {topic.title}
-                  </Typography>
+                  <h3 className="mb-1 text-[1.05rem] font-bold">{topic.title}</h3>
+                  <p className="mb-2 line-clamp-2 text-sm text-muted-foreground">{topic.content}</p>
 
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      mb: 1.5
-                    }}
-                  >
-                    {topic.content}
-                  </Typography>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      By <strong>{topic.authorName || "Anonymous"}</strong> ·{" "}
+                      {topic.createdAt?.toDate ? formatDistanceToNow(topic.createdAt.toDate()) + " ago" : "Recently"}
+                    </span>
 
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="caption" color="text.secondary">
-                      By <strong>{topic.authorName || "Anonymous"}</strong> •{" "}
-                      {topic.createdAt?.toDate
-                        ? formatDistanceToNow(topic.createdAt.toDate()) + " ago"
-                        : "Recently"}
-                    </Typography>
-
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Stack direction="row" spacing={0.5} alignItems="center" color="text.secondary">
-                        <LikeIcon sx={{ fontSize: 16 }} />
-                        <Typography variant="caption" fontWeight={700}>
-                          {topic.likeCount || 0}
-                        </Typography>
-                      </Stack>
-
-                      <Stack direction="row" spacing={0.5} alignItems="center" color="text.secondary">
-                        <CommentIcon sx={{ fontSize: 16 }} />
-                        <Typography variant="caption" fontWeight={700}>
-                          {topic.replyCount || 0} replies
-                        </Typography>
-                      </Stack>
-                    </Stack>
-                  </Stack>
-                </Box>
-              </Stack>
-            </Card>
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <span className="flex items-center gap-1 text-xs font-semibold">
+                        <ThumbsUp className="size-3.5" />
+                        {topic.likeCount || 0}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs font-semibold">
+                        <MessageCircle className="size-3.5" />
+                        {topic.replyCount || 0} replies
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </button>
           ))}
-        </Stack>
+        </div>
       )}
 
-      {/* New Topic Modal */}
       <TopicComposerModal
         open={isComposerOpen}
         onClose={() => setIsComposerOpen(false)}
         onSubmit={handleCreateTopic}
       />
 
-      {/* Discussion Thread View Modal */}
       {selectedTopic && (
         <DiscussionThreadView
           open={Boolean(selectedTopic)}
@@ -321,7 +211,7 @@ export const NoteDiscussionForum = ({ noteId, noteAuthorId }) => {
           likedIds={likedIds}
         />
       )}
-    </Paper>
+    </div>
   );
 };
 

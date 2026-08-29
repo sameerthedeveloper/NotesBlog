@@ -1,24 +1,12 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Stack,
-  Avatar,
-  IconButton,
-  Button,
-  Chip,
-  Tooltip,
-  Divider
-} from "@mui/material";
-import {
-  ThumbUpOutlined as LikeIcon,
-  ThumbUp as LikedIcon,
-  Reply as ReplyIcon,
-  CheckCircle as SolvedIcon,
-  DeleteOutline as DeleteIcon,
-  Star as BestAnswerIcon
-} from "@mui/icons-material";
+"use client";
+
+import { useState } from "react";
+import { ThumbsUp, Reply as ReplyIcon, CheckCircle2, Trash2, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import ReplyComposer from "./ReplyComposer";
 
 const ReplyItem = ({
@@ -30,141 +18,115 @@ const ReplyItem = ({
   onReplySubmit,
   onMarkSolved,
   onDelete,
-  depth = 0
+  depth = 0,
 }) => {
   const [showReplyComposer, setShowReplyComposer] = useState(false);
 
   const isLiked = likedIds.has(reply.id);
   const isBestAnswer = topic.bestAnswerReplyId === reply.id;
-  const isTopicAuthor = topic.authorId === reply.authorId;
   const isNoteAuthor = topic.noteAuthorId === reply.authorId;
   const canMarkSolved = (currentUserId === topic.noteAuthorId || currentUserId === topic.authorId) && !topic.isLocked;
   const canDelete = currentUserId === reply.authorId || currentUserId === topic.noteAuthorId;
 
   return (
-    <Box
-      sx={{
-        pl: depth > 0 ? { xs: 2, sm: 4 } : 0,
-        mt: 2,
-        borderLeft: depth > 0 ? "2px solid" : "none",
-        borderColor: isBestAnswer ? "success.main" : "divider"
-      }}
+    <div
+      className={cn(
+        "mt-4",
+        depth > 0 && "border-l-2 border-border pl-4 sm:pl-8",
+        isBestAnswer && depth > 0 && "border-emerald-500"
+      )}
     >
-      <Box
-        sx={{
-          p: 2.5,
-          borderRadius: 3,
-          bgcolor: isBestAnswer 
-            ? (theme) => theme.palette.mode === "dark" ? "rgba(46, 125, 50, 0.12)" : "rgba(232, 245, 233, 0.7)"
-            : "background.paper",
-          border: "1px solid",
-          borderColor: isBestAnswer ? "success.light" : "divider"
-        }}
+      <div
+        className={cn(
+          "rounded-2xl border p-4",
+          isBestAnswer ? "border-success/40 bg-success/8" : "border-border bg-card"
+        )}
       >
         {isBestAnswer && (
-          <Chip
-            icon={<BestAnswerIcon sx={{ color: "success.main !important" }} />}
-            label="Verified Best Answer"
-            color="success"
-            variant="outlined"
-            size="small"
-            sx={{ fontWeight: 700, mb: 1.5, borderRadius: 2 }}
-          />
+          <Badge variant="outline" className="mb-3 gap-1.5 border-emerald-500/40 font-semibold text-emerald-600">
+            <Star className="size-3.5" />
+            Verified Best Answer
+          </Badge>
         )}
 
-        <Stack direction="row" spacing={2} alignItems="flex-start">
-          <Avatar
-            src={reply.authorPhoto}
-            sx={{ width: 36, height: 36, bgcolor: "primary.main", fontWeight: 700, fontSize: "0.9rem" }}
-          >
-            {reply.authorName?.charAt(0) || "U"}
+        <div className="flex items-start gap-3">
+          <Avatar className="size-9">
+            <AvatarImage src={reply.authorPhoto || undefined} />
+            <AvatarFallback>{reply.authorName?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
 
-          <Box sx={{ flexGrow: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-              <Typography variant="subtitle2" fontWeight={700}>
-                {reply.authorName || "Anonymous"}
-              </Typography>
-
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm font-bold">{reply.authorName || "Anonymous"}</span>
               {isNoteAuthor && (
-                <Chip label="Author" size="small" color="primary" sx={{ height: 20, fontSize: "0.65rem", fontWeight: 700 }} />
+                <Badge className="h-5 text-[10px] font-bold">Author</Badge>
               )}
-
-              <Typography variant="caption" color="text.secondary">
+              <span className="text-xs text-muted-foreground">
                 {reply.createdAt?.toDate ? formatDistanceToNow(reply.createdAt.toDate()) + " ago" : "Just now"}
-              </Typography>
-            </Stack>
+              </span>
+            </div>
 
-            <Typography variant="body2" sx={{ mt: 1.5, whitespace: "pre-wrap", color: "text.primary", lineHeight: 1.6 }}>
-              {reply.content}
-            </Typography>
+            <p className="mt-1.5 leading-relaxed whitespace-pre-wrap">{reply.content}</p>
 
             {reply.codeSnippet && (
-              <Box
-                component="pre"
-                sx={{
-                  p: 2,
-                  mt: 1.5,
-                  borderRadius: 2,
-                  bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.04)",
-                  fontFamily: "monospace",
-                  fontSize: "0.85rem",
-                  overflowX: "auto",
-                  border: "1px solid",
-                  borderColor: "divider"
-                }}
-              >
+              <pre className="mt-2 overflow-x-auto rounded-lg border border-border bg-muted p-3 font-mono text-sm">
                 <code>{reply.codeSnippet}</code>
-              </Box>
+              </pre>
             )}
 
-            <Stack direction="row" spacing={1} alignItems="center" mt={2}>
+            <div className="mt-2 flex items-center gap-1">
               <Button
-                size="small"
-                startIcon={isLiked ? <LikedIcon color="primary" fontSize="small" /> : <LikeIcon fontSize="small" />}
+                size="sm"
+                variant="ghost"
+                className={cn("font-semibold", isLiked ? "text-primary" : "text-muted-foreground")}
                 onClick={() => onLike(reply.id)}
-                sx={{ borderRadius: 2, fontWeight: 700, color: isLiked ? "primary.main" : "text.secondary" }}
               >
+                <ThumbsUp className={cn("size-4", isLiked && "fill-current")} />
                 {reply.likes || 0}
               </Button>
 
               {depth < 5 && !topic.isLocked && (
                 <Button
-                  size="small"
-                  startIcon={<ReplyIcon fontSize="small" />}
+                  size="sm"
+                  variant="ghost"
+                  className="font-semibold text-muted-foreground"
                   onClick={() => setShowReplyComposer(!showReplyComposer)}
-                  sx={{ borderRadius: 2, fontWeight: 700, color: "text.secondary" }}
                 >
+                  <ReplyIcon className="size-4" />
                   Reply
                 </Button>
               )}
 
               {canMarkSolved && (
-                <Tooltip title={isBestAnswer ? "Unmark as Best Answer" : "Mark as Best Answer"}>
-                  <Button
-                    size="small"
-                    color={isBestAnswer ? "success" : "default"}
-                    startIcon={<SolvedIcon fontSize="small" />}
-                    onClick={() => onMarkSolved(reply.id, !isBestAnswer)}
-                    sx={{ borderRadius: 2, fontWeight: 700 }}
-                  >
-                    {isBestAnswer ? "Solved" : "Accept Answer"}
-                  </Button>
-                </Tooltip>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn("font-semibold", isBestAnswer && "text-emerald-600")}
+                  title={isBestAnswer ? "Unmark as Best Answer" : "Mark as Best Answer"}
+                  onClick={() => onMarkSolved(reply.id, !isBestAnswer)}
+                >
+                  <CheckCircle2 className="size-4" />
+                  {isBestAnswer ? "Solved" : "Accept Answer"}
+                </Button>
               )}
 
               {canDelete && (
-                <IconButton size="small" onClick={() => onDelete(reply.id)} color="error">
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 text-destructive"
+                  onClick={() => onDelete(reply.id)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
               )}
-            </Stack>
-          </Box>
-        </Stack>
-      </Box>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {showReplyComposer && (
-        <Box sx={{ mt: 2, ml: { xs: 2, sm: 4 } }}>
+        <div className="mt-2 ml-4 sm:ml-8">
           <ReplyComposer
             parentReplyAuthor={reply.authorName}
             onCancelParent={() => setShowReplyComposer(false)}
@@ -173,9 +135,9 @@ const ReplyItem = ({
               setShowReplyComposer(false);
             }}
           />
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

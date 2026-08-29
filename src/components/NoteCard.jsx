@@ -1,224 +1,158 @@
-import React from "react";
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Box, 
-  Chip, 
-  IconButton, 
-  Tooltip,
-  CardActionArea,
-  Stack,
-  alpha,
-  useTheme
-} from "@mui/material";
-import { 
-  PushPin as PinnedIcon, 
-  PushPinOutlined as UnpinnedIcon,
-  Favorite as FavoriteIcon, 
-  FavoriteBorder as UnfavoriteIcon,
-  DeleteOutline as DeleteIcon,
-  ShareOutlined as ShareIcon,
-  VisibilityOutlined as ViewIcon,
-  LockOutlined as PrivateIcon,
-  PublicOutlined as PublicIcon
-} from "@mui/icons-material";
+"use client";
+
+import {
+  Pin,
+  PinOff,
+  Heart,
+  Trash2,
+  Share2,
+  Eye,
+  Lock,
+  Globe,
+  Zap,
+  MoreHorizontal,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { stripHtmlTags } from "../utils/sanitizer";
-import { extractNoteMetadata } from "../utils/metadataExtractor";
+import { stripHtmlTags } from "@/utils/sanitizer";
+import { extractNoteMetadata } from "@/utils/metadataExtractor";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 export const NoteCard = ({ note, onDelete, onClick, onTogglePin, onToggleFavorite, onShare }) => {
-  const theme = useTheme();
-  
   if (!note) return null;
 
   const { title = "Untitled Note", content = "", visibility = "private", updatedAt, tags = [], isPinned = false, isFavorite = false, viewCount = 0 } = note;
 
   const meta = extractNoteMetadata(content);
   const previewContent = (meta.excerpt || stripHtmlTags(content).slice(0, 140)) + (content?.length > 140 ? "..." : "");
+  const hasOverflowActions = onToggleFavorite || onShare || onDelete;
 
   return (
-    <Card 
-      variant="outlined" 
-      sx={{ 
-        height: "100%", 
-        display: "flex", 
-        flexDirection: "column", 
-        borderRadius: 4, 
-        borderColor: isPinned ? "primary.main" : "divider",
-        backgroundColor: "background.paper",
-        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-        position: "relative",
-        overflow: "hidden",
-        "& .card-actions": { opacity: { xs: 1, sm: 0.85 } },
-        "&:hover": {
-          boxShadow: (theme) => theme.palette.mode === "dark" ? "0 12px 32px rgba(0,0,0,0.4)" : "0 12px 32px rgba(11,87,208,0.08)",
-          borderColor: "primary.main",
-          transform: "translateY(-3px)",
-          "& .card-actions": { opacity: 1 }
-        }
-      }}
+    <Card
+      className={cn(
+        "group h-full w-full overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.75 hover:shadow-lg",
+        isPinned ? "border-primary" : "border-border"
+      )}
     >
-      <CardActionArea 
-        onClick={onClick} 
-        sx={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "stretch" }}
-      >
-        <CardContent sx={{ flexGrow: 1, p: 3, "&:last-child": { pb: 3 } }}>
-          <Stack spacing={1.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  fontWeight: 700, 
-                  fontSize: "1.1rem",
-                  lineHeight: 1.3,
-                  color: "text.primary",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden" 
-                }}
-              >
+      <button onClick={onClick} className="flex flex-1 flex-col items-stretch text-left ">
+        <CardContent className="flex-1 p-5">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="line-clamp-2 text-[1.1rem] leading-snug font-bold text-foreground">
                 {title || "Untitled Note"}
-              </Typography>
-              {visibility === "public" ? (
-                <Tooltip title="Public Note">
-                  <PublicIcon fontSize="small" color="action" />
-                </Tooltip>
-              ) : (
-                <Tooltip title="Private Note">
-                  <PrivateIcon fontSize="small" color="disabled" />
-                </Tooltip>
-              )}
-            </Box>
-            
-            <Typography 
-              variant="body2" 
-              color="text.secondary" 
-              sx={{ 
-                display: "-webkit-box",
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                minHeight: "3.8em",
-                lineHeight: 1.6
-              }}
-            >
+              </h3>
+              <Badge
+                variant={visibility === "public" ? "outline" : "secondary"}
+                className="shrink-0 gap-1 rounded-md text-[10px] font-semibold"
+              >
+                {visibility === "public" ? <Globe className="size-3" /> : <Lock className="size-3" />}
+                {visibility === "public" ? "Public" : "Private"}
+              </Badge>
+            </div>
+
+            <p className="line-clamp-4 min-h-[3.8em] text-sm leading-relaxed text-muted-foreground">
               {previewContent || "No additional text content..."}
-            </Typography>
+            </p>
 
-            <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ pt: 0.5 }}>
-              <Chip 
-                label={`⚡ ${meta.readingTimeMinutes} min read`} 
-                size="small" 
-                sx={{ 
-                  borderRadius: 1.5,
-                  fontWeight: 600,
-                  fontSize: '0.675rem',
-                  height: 20,
-                  bgcolor: alpha(theme.palette.primary.main, 0.08),
-                  color: 'primary.main'
-                }}
-              />
-              {tags && tags.map((tag) => (
-                <Chip 
-                  key={tag} 
-                  label={`#${tag}`} 
-                  size="small" 
-                  variant="outlined"
-                  sx={{ 
-                    borderRadius: 1.5,
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 22,
-                    borderColor: alpha(theme.palette.primary.main, 0.2),
-                    color: 'primary.main',
-                    bgcolor: alpha(theme.palette.primary.main, 0.04)
-                  }}
-                />
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              <Badge variant="secondary" className="gap-1 rounded-md bg-primary/8 text-xs font-semibold text-primary">
+                <Zap className="size-3" />
+                {meta.readingTimeMinutes} min read
+              </Badge>
+              {tags?.map((tag) => (
+                <Badge key={tag} variant="outline" className="rounded-md border-primary/20 bg-primary/4 text-xs font-semibold text-primary">
+                  #{tag}
+                </Badge>
               ))}
-            </Stack>
-          </Stack>
+            </div>
+          </div>
         </CardContent>
-      </CardActionArea>
-      
-      <Box 
-        className="card-actions"
-        sx={{ 
-          px: 3, 
-          py: 1.5, 
-          display: "flex", 
-          justifyContent: "space-between", 
-          alignItems: "center",
-          borderTop: "1px solid",
-          borderColor: "divider",
-          bgcolor: (theme) => theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)"
-        }}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.disabled', fontSize: '0.75rem' }}>
-            {updatedAt?.toDate ? formatDistanceToNow(updatedAt.toDate()) + " ago" : "Recently"}
-          </Typography>
-          {viewCount > 0 && (
-            <Stack direction="row" spacing={0.3} alignItems="center" sx={{ color: "text.disabled" }}>
-              <ViewIcon sx={{ fontSize: "0.85rem" }} />
-              <Typography variant="caption" sx={{ fontSize: "0.75rem", fontWeight: 600 }}>
-                {viewCount}
-              </Typography>
-            </Stack>
-          )}
-        </Stack>
+      </button>
 
-        <Stack direction="row" spacing={0.5}>
+      <div className="flex items-center justify-between border-t border-border bg-muted/40 px-5 py-3">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs font-semibold text-muted-foreground/70">
+            {updatedAt?.toDate ? formatDistanceToNow(updatedAt.toDate()) + " ago" : "Recently"}
+          </span>
+          {viewCount > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex items-center gap-1 font-mono text-xs font-semibold text-muted-foreground/70">
+                  <Eye className="size-3.5" />
+                  {viewCount}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{viewCount} view{viewCount === 1 ? "" : "s"}</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+
+        <div className="flex items-center gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:has-data-[state=open]:opacity-100">
           {onTogglePin && (
-            <Tooltip title={isPinned ? "Unpin" : "Pin"}>
-              <IconButton 
-                size="small" 
-                onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
-                sx={{ color: isPinned ? "primary.main" : "text.secondary", borderRadius: 2 }}
-              >
-                {isPinned ? <PinnedIcon fontSize="small" /> : <UnpinnedIcon fontSize="small" />}
-              </IconButton>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+                  aria-label={isPinned ? "Unpin" : "Pin"}
+                  className={cn("rounded-lg p-1.5 hover:bg-muted", isPinned ? "text-primary" : "text-muted-foreground")}
+                >
+                  {isPinned ? <Pin className="size-4" /> : <PinOff className="size-4" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{isPinned ? "Unpin" : "Pin"}</TooltipContent>
             </Tooltip>
           )}
-          {onToggleFavorite && (
-            <Tooltip title={isFavorite ? "Unfavorite" : "Favorite"}>
-              <IconButton 
-                size="small" 
-                onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-                sx={{ color: isFavorite ? "error.main" : "text.secondary", borderRadius: 2 }}
-              >
-                {isFavorite ? <FavoriteIcon fontSize="small" /> : <UnfavoriteIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
+
+          {hasOverflowActions && (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="More actions"
+                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>More actions</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                {onToggleFavorite && (
+                  <DropdownMenuItem onClick={onToggleFavorite}>
+                    <Heart className={isFavorite ? "fill-current" : ""} />
+                    {isFavorite ? "Unfavorite" : "Favorite"}
+                  </DropdownMenuItem>
+                )}
+                {onShare && (
+                  <DropdownMenuItem onClick={onShare}>
+                    <Share2 />
+                    Copy link
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                    <Trash2 />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          {onShare && (
-            <Tooltip title="Share Link">
-              <IconButton 
-                size="small" 
-                onClick={(e) => { e.stopPropagation(); onShare(e); }}
-                sx={{ color: "text.secondary", borderRadius: 2 }}
-              >
-                <ShareIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {onDelete && (
-            <Tooltip title="Delete">
-              <IconButton 
-                size="small" 
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                sx={{ color: "text.secondary", borderRadius: 2 }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Stack>
-      </Box>
+        </div>
+      </div>
     </Card>
   );
 };
 
 export default NoteCard;
-

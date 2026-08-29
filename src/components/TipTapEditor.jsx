@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Underline } from "@tiptap/extension-underline";
@@ -18,65 +20,116 @@ import { Link } from "@tiptap/extension-link";
 import { Placeholder } from "@tiptap/extension-placeholder";
 
 import {
-  Box,
-  Paper,
-  Divider,
-  IconButton,
-  ToggleButton,
-  ToggleButtonGroup,
-  Menu,
-  MenuItem,
-  Tooltip,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Chip,
-  Stack,
-  CircularProgress
-} from "@mui/material";
-
-import {
-  AutoAwesome as SparklesIcon,
-  Undo,
-  Redo,
-  FormatBold,
-  FormatItalic,
-  FormatUnderlined,
-  StrikethroughS,
-  FormatListBulleted,
-  FormatListNumbered,
-  FormatQuote,
-  Code,
-  HorizontalRule,
-  FormatAlignLeft,
-  FormatAlignCenter,
-  FormatAlignRight,
-  FormatAlignJustify,
-  InsertLink,
-  LinkOff,
+  Sparkles,
+  Undo2,
+  Redo2,
+  Bold as BoldIcon,
+  Italic as ItalicIcon,
+  Underline as UnderlineIcon,
+  Strikethrough,
+  List,
+  ListOrdered,
+  Quote,
+  Code as CodeIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Link2,
   Image as ImageIcon,
-  YouTube as YoutubeIcon,
-  TableChart,
-  FormatColorFill,
-  FormatColorText,
-  FormatClear,
-  CheckBoxOutlined,
-  CloudUpload,
+  Video as VideoIcon,
+  Table as TableIcon,
+  Highlighter,
+  Baseline,
+  Eraser,
+  ListChecks,
+  Upload,
   Save,
-  CheckCircleOutline
-} from "@mui/icons-material";
+  CheckCircle2,
+  Loader2,
+  ChevronDown,
+  Zap,
+} from "lucide-react";
 
-import { sanitizeHTML } from "../utils/sanitizer";
-import { convertMarkdownToSanitizedHtml } from "../utils/markdownToHtml";
-import { extractNoteMetadata, normalizeChatGPTClipboardHtml } from "../utils/metadataExtractor";
-import { uploadFileAttachment } from "../features/notes/services/notesService";
-import { useAuth } from "../context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
-import PromptBuilderModal from "./PromptBuilderModal";
+import { sanitizeHTML } from "@/utils/sanitizer";
+import { convertMarkdownToSanitizedHtml } from "@/utils/markdownToHtml";
+import { extractNoteMetadata, normalizeChatGPTClipboardHtml } from "@/utils/metadataExtractor";
+import { uploadFileAttachment } from "@/features/notes/services/notesService";
+import { useAuth } from "@/context/AuthContext";
+
+import PromptBuilderModal from "@/components/PromptBuilderModal";
+
+const COLORS = ["#000000", "#434343", "#666666", "#d9d9d9", "#d0021b", "#f5a623", "#f8e71c", "#7ed321", "#4a90e2", "#9013fe"];
+
+function ToolbarButton({ label, active, disabled, onClick, children }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={disabled}
+          onClick={onClick}
+          className={cn("size-8", active && "bg-primary/10 text-primary")}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ColorSwatchMenu({ label, icon, onPick }) {
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="size-8">
+              {icon}
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent className="grid grid-cols-5 gap-1.5 p-2">
+        {COLORS.map((c) => (
+          <button
+            key={c}
+            onClick={() => onPick(c)}
+            className="size-6 rounded-full border border-border transition-transform hover:scale-110"
+            style={{ backgroundColor: c }}
+          />
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export const TipTapEditor = ({
   initialContent = "",
@@ -84,10 +137,10 @@ export const TipTapEditor = ({
   onSave,
   onMetadataExtracted,
   autoSave = true,
-  placeholder = "Start writing your note here..."
+  placeholder = "Start writing your note here...",
 }) => {
   const { currentUser } = useAuth();
-  const [saveStatus, setSaveStatus] = useState("saved"); // 'saved', 'saving', 'unsaved'
+  const [saveStatus, setSaveStatus] = useState("saved");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
@@ -97,18 +150,11 @@ export const TipTapEditor = ({
   const [videoUrl, setVideoUrl] = useState("");
   const [promptModalOpen, setPromptModalOpen] = useState(false);
 
-  // Heading Menu state
-  const [headingAnchorEl, setHeadingAnchorEl] = useState(null);
-  // Color Menu state
-  const [colorAnchorEl, setColorAnchorEl] = useState(null);
-  // Highlight Menu state
-  const [highlightAnchorEl, setHighlightAnchorEl] = useState(null);
-
-  // Convert initial content if legacy markdown
   const sanitizedInitialContent = convertMarkdownToSanitizedHtml(initialContent);
   const [docMetadata, setDocMetadata] = useState(() => extractNoteMetadata(sanitizedInitialContent));
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
@@ -142,7 +188,6 @@ export const TipTapEditor = ({
         const text = clipboardData.getData("text/plain");
 
         try {
-          // 1. Rich HTML paste from clipboard (ChatGPT, Word, Google Docs, Notion, Web)
           if (html && html.trim()) {
             const normalized = normalizeChatGPTClipboardHtml(html);
             const sanitized = sanitizeHTML(normalized);
@@ -155,7 +200,6 @@ export const TipTapEditor = ({
             }
           }
 
-          // 2. Raw HTML code string paste (e.g., pasting "<h1>Title</h1><p>Text</p>")
           if (text && typeof text === "string") {
             const trimmed = text.trim();
             const isRawHtmlString = /<\/?(p|h[1-6]|ul|ol|li|table|tr|td|th|div|span|strong|em|u|s|blockquote|pre|code|a|img|hr|br)[^>]*>/i.test(trimmed);
@@ -171,7 +215,7 @@ export const TipTapEditor = ({
             }
           }
         } catch (err) {
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== "production") {
             console.error("Smart HTML paste handler error:", err);
           }
           return false;
@@ -190,7 +234,6 @@ export const TipTapEditor = ({
     },
   });
 
-  // Handle Auto-Save Debounce
   useEffect(() => {
     if (!autoSave || !onSave || saveStatus !== "unsaved") return;
 
@@ -212,13 +255,12 @@ export const TipTapEditor = ({
 
   if (!editor) {
     return (
-      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-        <CircularProgress size={32} />
-      </Box>
+      <div className="flex justify-center p-8">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
-  // --- Handlers ---
   const handleSetLink = () => {
     if (linkUrl) {
       editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
@@ -240,7 +282,7 @@ export const TipTapEditor = ({
   const handleImageFileUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
-    
+
     setUploadingImage(true);
     try {
       const result = await uploadFileAttachment(currentUser.uid, file);
@@ -261,585 +303,254 @@ export const TipTapEditor = ({
     }
   };
 
-  const colors = ["#000000", "#434343", "#666666", "#d9d9d9", "#d0021b", "#f5a623", "#f8e71c", "#7ed321", "#4a90e2", "#9013fe"];
+  const headingLabel = editor.isActive("heading", { level: 1 })
+    ? "Heading 1"
+    : editor.isActive("heading", { level: 2 })
+    ? "Heading 2"
+    : editor.isActive("heading", { level: 3 })
+    ? "Heading 3"
+    : "Paragraph";
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        borderRadius: 3,
-        overflow: "hidden",
-        bgcolor: "background.paper",
-        borderColor: "divider",
-      }}
-    >
-      {/* Editor Top Control Bar */}
-      <Box
-        sx={{
-          p: 1.5,
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 0.5,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)"),
-        }}
-      >
-        {/* Undo / Redo */}
-        <Tooltip title="Undo">
-          <span>
-            <IconButton
-              size="small"
-              onClick={() => editor.chain().focus().undo().run()}
-              disabled={!editor.can().undo()}
-            >
-              <Undo fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Redo">
-          <span>
-            <IconButton
-              size="small"
-              onClick={() => editor.chain().focus().redo().run()}
-              disabled={!editor.can().redo()}
-            >
-              <Redo fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/40 p-2">
+        <ToolbarButton label="Undo" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
+          <Undo2 className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Redo" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}>
+          <Redo2 className="size-4" />
+        </ToolbarButton>
 
-        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* Heading Dropdown */}
-        <Button
-          size="small"
-          onClick={(e) => setHeadingAnchorEl(e.currentTarget)}
-          sx={{ textTransform: "none", fontWeight: 600, px: 1.5 }}
-        >
-          {editor.isActive("heading", { level: 1 })
-            ? "Heading 1"
-            : editor.isActive("heading", { level: 2 })
-            ? "Heading 2"
-            : editor.isActive("heading", { level: 3 })
-            ? "Heading 3"
-            : "Paragraph"}
-        </Button>
-        <Menu
-          anchorEl={headingAnchorEl}
-          open={Boolean(headingAnchorEl)}
-          onClose={() => setHeadingAnchorEl(null)}
-        >
-          <MenuItem
-            onClick={() => {
-              editor.chain().focus().setParagraph().run();
-              setHeadingAnchorEl(null);
-            }}
-          >
-            Paragraph
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              editor.chain().focus().toggleHeading({ level: 1 }).run();
-              setHeadingAnchorEl(null);
-            }}
-          >
-            <Typography variant="h5">Heading 1</Typography>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              editor.chain().focus().toggleHeading({ level: 2 }).run();
-              setHeadingAnchorEl(null);
-            }}
-          >
-            <Typography variant="h6">Heading 2</Typography>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              editor.chain().focus().toggleHeading({ level: 3 }).run();
-              setHeadingAnchorEl(null);
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Heading 3
-            </Typography>
-          </MenuItem>
-        </Menu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" className="gap-1 px-2 font-semibold">
+              {headingLabel}
+              <ChevronDown className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setParagraph().run()}>
+              Paragraph
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+              <span className="text-xl font-bold">Heading 1</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+              <span className="text-lg font-bold">Heading 2</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+              <span className="text-base font-bold">Heading 3</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* Text Styling */}
-        <Tooltip title="Bold">
-          <IconButton
-            size="small"
-            color={editor.isActive("bold") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-          >
-            <FormatBold fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Italic">
-          <IconButton
-            size="small"
-            color={editor.isActive("italic") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-          >
-            <FormatItalic fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Underline">
-          <IconButton
-            size="small"
-            color={editor.isActive("underline") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-          >
-            <FormatUnderlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Strikethrough">
-          <IconButton
-            size="small"
-            color={editor.isActive("strike") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-          >
-            <StrikethroughS fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
+          <BoldIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <ItalicIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Underline" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+          <UnderlineIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Strikethrough" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()}>
+          <Strikethrough className="size-4" />
+        </ToolbarButton>
 
-        {/* Text Color Picker */}
-        <Tooltip title="Text Color">
-          <IconButton size="small" onClick={(e) => setColorAnchorEl(e.currentTarget)}>
-            <FormatColorText fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Menu
-          anchorEl={colorAnchorEl}
-          open={Boolean(colorAnchorEl)}
-          onClose={() => setColorAnchorEl(null)}
-        >
-          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, p: 1 }}>
-            {colors.map((c) => (
-              <Box
-                key={c}
-                onClick={() => {
-                  editor.chain().focus().setColor(c).run();
-                  setColorAnchorEl(null);
-                }}
-                sx={{
-                  width: 24,
-                  height: 24,
-                  bgcolor: c,
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  border: "1px solid rgba(0,0,0,0.2)",
-                  "&:hover": { transform: "scale(1.15)" },
-                }}
-              />
-            ))}
-          </Box>
-        </Menu>
+        <ColorSwatchMenu
+          label="Text Color"
+          icon={<Baseline className="size-4" />}
+          onPick={(c) => editor.chain().focus().setColor(c).run()}
+        />
+        <ColorSwatchMenu
+          label="Highlight Color"
+          icon={<Highlighter className="size-4" />}
+          onPick={(c) => editor.chain().focus().toggleHighlight({ color: c }).run()}
+        />
 
-        {/* Highlight Color Picker */}
-        <Tooltip title="Highlight Color">
-          <IconButton size="small" onClick={(e) => setHighlightAnchorEl(e.currentTarget)}>
-            <FormatColorFill fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Menu
-          anchorEl={highlightAnchorEl}
-          open={Boolean(highlightAnchorEl)}
-          onClose={() => setHighlightAnchorEl(null)}
-        >
-          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, p: 1 }}>
-            {colors.map((c) => (
-              <Box
-                key={c}
-                onClick={() => {
-                  editor.chain().focus().toggleHighlight({ color: c }).run();
-                  setHighlightAnchorEl(null);
-                }}
-                sx={{
-                  width: 24,
-                  height: 24,
-                  bgcolor: c,
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  border: "1px solid rgba(0,0,0,0.2)",
-                  "&:hover": { transform: "scale(1.15)" },
-                }}
-              />
-            ))}
-          </Box>
-        </Menu>
+        <ToolbarButton label="Clear Formatting" onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}>
+          <Eraser className="size-4" />
+        </ToolbarButton>
 
-        <Tooltip title="Clear Formatting">
-          <IconButton
-            size="small"
-            onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-          >
-            <FormatClear fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
-        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+        <ToolbarButton label="Align Left" active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()}>
+          <AlignLeft className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Align Center" active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()}>
+          <AlignCenter className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Align Right" active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()}>
+          <AlignRight className="size-4" />
+        </ToolbarButton>
 
-        {/* Alignment */}
-        <Tooltip title="Align Left">
-          <IconButton
-            size="small"
-            color={editor.isActive({ textAlign: "left" }) ? "primary" : "default"}
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          >
-            <FormatAlignLeft fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Align Center">
-          <IconButton
-            size="small"
-            color={editor.isActive({ textAlign: "center" }) ? "primary" : "default"}
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          >
-            <FormatAlignCenter fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Align Right">
-          <IconButton
-            size="small"
-            color={editor.isActive({ textAlign: "right" }) ? "primary" : "default"}
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          >
-            <FormatAlignRight fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
-        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+        <ToolbarButton label="Bullet List" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+          <List className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Numbered List" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+          <ListOrdered className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Task List" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}>
+          <ListChecks className="size-4" />
+        </ToolbarButton>
 
-        {/* Lists & Task list */}
-        <Tooltip title="Bullet List">
-          <IconButton
-            size="small"
-            color={editor.isActive("bulletList") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-          >
-            <FormatListBulleted fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Numbered List">
-          <IconButton
-            size="small"
-            color={editor.isActive("orderedList") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          >
-            <FormatListNumbered fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Task List">
-          <IconButton
-            size="small"
-            color={editor.isActive("taskList") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-          >
-            <CheckBoxOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
-        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-
-        {/* Table, Image, Video, Link, Code */}
-        <Tooltip title="Insert Table">
-          <IconButton
-            size="small"
-            onClick={() =>
-              editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-            }
-          >
-            <TableChart fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Insert Image">
-          <IconButton size="small" onClick={() => setImageDialogOpen(true)}>
-            <ImageIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Embed Video / YouTube">
-          <IconButton size="small" onClick={() => setVideoDialogOpen(true)}>
-            <YoutubeIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Insert Link">
-          <IconButton
-            size="small"
-            color={editor.isActive("link") ? "primary" : "default"}
-            onClick={() => {
-              setLinkUrl(editor.getAttributes("link").href || "");
-              setLinkDialogOpen(true);
-            }}
-          >
-            <InsertLink fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Blockquote">
-          <IconButton
-            size="small"
-            color={editor.isActive("blockquote") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          >
-            <FormatQuote fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Code Block">
-          <IconButton
-            size="small"
-            color={editor.isActive("codeBlock") ? "primary" : "default"}
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          >
-            <Code fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="AI Prompt Builder">
-          <IconButton size="small" color="primary" onClick={() => setPromptModalOpen(true)}>
-            <SparklesIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Box sx={{ flexGrow: 1 }} />
-
-        {/* Auto Save Status Badge */}
-        {autoSave && (
-          <Chip
-            size="small"
-            variant="outlined"
-            icon={
-              saveStatus === "saving" ? (
-                <CircularProgress size={12} />
-              ) : saveStatus === "saved" ? (
-                <CheckCircleOutline fontSize="small" />
-              ) : (
-                <Save fontSize="small" />
-              )
-            }
-            label={
-              saveStatus === "saving"
-                ? "Saving..."
-                : saveStatus === "saved"
-                ? "Saved"
-                : "Unsaved changes"
-            }
-            color={saveStatus === "saved" ? "success" : saveStatus === "saving" ? "info" : "warning"}
-            sx={{ fontWeight: 600, fontSize: "0.75rem" }}
-          />
-        )}
-      </Box>
-
-      {/* Editor Body */}
-      <Box
-        className="opennotes-content"
-        sx={{
-          p: 3,
-          minHeight: 350,
-          "& .tiptap": {
-            outline: "none",
-            minHeight: 300,
-            fontSize: "1.05rem",
-            lineHeight: 1.7,
-            "& p.is-editor-empty:first-child::before": {
-              color: "text.disabled",
-              content: "attr(data-placeholder)",
-              float: "left",
-              height: 0,
-              pointerEvents: "none",
-            },
-            "& table": {
-              borderCollapse: "collapse",
-              width: "100%",
-              my: 2,
-              "& th, & td": {
-                border: "1px solid",
-                borderColor: "divider",
-                p: 1.5,
-              },
-              "& th": {
-                bgcolor: "action.hover",
-                fontWeight: 700,
-              },
-            },
-            "& ul[data-type='taskList']": {
-              listStyle: "none",
-              p: 0,
-              "& li": {
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                my: 0.5,
-                "& > label": {
-                  cursor: "pointer",
-                },
-              },
-            },
-            "& blockquote": {
-              borderLeft: "4px solid",
-              borderColor: "primary.main",
-              pl: 2,
-              my: 2,
-              fontStyle: "italic",
-              color: "text.secondary",
-            },
-            "& pre": {
-              bgcolor: (theme) => (theme.palette.mode === "dark" ? "#1e1e1e" : "#f5f5f5"),
-              color: (theme) => (theme.palette.mode === "dark" ? "#d4d4d4" : "#333"),
-              p: 2,
-              borderRadius: 2,
-              fontFamily: "monospace",
-              overflowX: "auto",
-            },
-            "& img": {
-              maxWidth: "100%",
-              height: "auto",
-              borderRadius: 2,
-              my: 2,
-            },
-            "& iframe": {
-              maxWidth: "100%",
-              borderRadius: 2,
-              my: 2,
-            },
-          },
-        }}
-      >
-        <EditorContent editor={editor} />
-
-        {/* Live Metadata & Reading Stats Bar */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 1.5,
-            px: 3,
-            py: 1,
-            borderTop: "1px solid",
-            borderColor: "divider",
-            bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)"),
+        <ToolbarButton label="Insert Table" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+          <TableIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Insert Image" onClick={() => setImageDialogOpen(true)}>
+          <ImageIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Embed Video / YouTube" onClick={() => setVideoDialogOpen(true)}>
+          <VideoIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Insert Link"
+          active={editor.isActive("link")}
+          onClick={() => {
+            setLinkUrl(editor.getAttributes("link").href || "");
+            setLinkDialogOpen(true);
           }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Chip
-              size="small"
-              label={`⚡ ${docMetadata.readingTimeMinutes} min read`}
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 600, fontSize: "0.75rem" }}
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-              {docMetadata.wordCount.toLocaleString()} words · {docMetadata.characterCount.toLocaleString()} chars
-            </Typography>
-          </Stack>
+          <Link2 className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Blockquote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+          <Quote className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="Code Block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+          <CodeIcon className="size-4" />
+        </ToolbarButton>
+        <ToolbarButton label="AI Prompt Builder" onClick={() => setPromptModalOpen(true)}>
+          <Sparkles className="size-4 text-primary" />
+        </ToolbarButton>
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Chip
-              size="small"
-              label={`Level: ${docMetadata.estimatedDifficulty}`}
-              sx={{ fontSize: "0.7rem", height: 20 }}
-            />
-            {docMetadata.headings.length > 0 && (
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {docMetadata.headings.length} headings
-              </Typography>
+        <div className="flex-1" />
+
+        {autoSave && (
+          <Badge variant="outline" className="gap-1.5 font-semibold">
+            {saveStatus === "saving" ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : saveStatus === "saved" ? (
+              <CheckCircle2 className="size-3 text-emerald-500" />
+            ) : (
+              <Save className="size-3" />
             )}
-          </Stack>
-        </Box>
-      </Box>
+            {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : "Unsaved changes"}
+          </Badge>
+        )}
+      </div>
+
+      {/* Editor Body */}
+      <div className="opennotes-content p-6">
+        <EditorContent editor={editor} />
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="gap-1 font-semibold text-primary">
+              <Zap className="size-3" />
+              {docMetadata.readingTimeMinutes} min read
+            </Badge>
+            <span className="text-xs font-medium text-muted-foreground">
+              {docMetadata.wordCount.toLocaleString()} words · {docMetadata.characterCount.toLocaleString()} chars
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-[11px]">
+              Level: {docMetadata.estimatedDifficulty}
+            </Badge>
+            {docMetadata.headings.length > 0 && (
+              <span className="text-xs font-medium text-muted-foreground">
+                {docMetadata.headings.length} headings
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Link Dialog */}
-      <Dialog open={linkDialogOpen} onClose={() => setLinkDialogOpen(false)}>
-        <DialogTitle>Insert / Edit Link</DialogTitle>
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent>
-          <TextField
+          <DialogHeader>
+            <DialogTitle>Insert / Edit Link</DialogTitle>
+          </DialogHeader>
+          <Input
             autoFocus
-            margin="dense"
-            label="URL Address"
             type="url"
-            fullWidth
-            variant="outlined"
+            placeholder="URL Address"
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
           />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSetLink}>Save Link</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLinkDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSetLink} variant="contained">
-            Save Link
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      {/* Image Upload Dialog */}
-      <Dialog open={imageDialogOpen} onClose={() => setImageDialogOpen(false)}>
-        <DialogTitle>Insert Image</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1, minWidth: 320 }}>
-          <Button
-            variant="outlined"
-            component="label"
-            startIcon={uploadingImage ? <CircularProgress size={20} /> : <CloudUpload />}
-            disabled={uploadingImage}
-          >
-            {uploadingImage ? "Uploading..." : "Upload Local Image"}
-            <input type="file" hidden accept="image/*" onChange={handleImageFileUpload} />
-          </Button>
+      {/* Image Dialog */}
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insert Image</DialogTitle>
+          </DialogHeader>
+          <div className="flex min-w-[320px] flex-col gap-3 pt-1">
+            <Button variant="outline" disabled={uploadingImage} asChild>
+              <label className="cursor-pointer">
+                {uploadingImage ? <Loader2 className="animate-spin" /> : <Upload />}
+                {uploadingImage ? "Uploading..." : "Upload Local Image"}
+                <input type="file" hidden accept="image/*" onChange={handleImageFileUpload} />
+              </label>
+            </Button>
 
-          <Divider>OR</Divider>
+            <div className="relative flex items-center">
+              <div className="h-px flex-1 bg-border" />
+              <span className="px-2 text-xs font-semibold text-muted-foreground">OR</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
 
-          <TextField
-            label="Image URL"
-            type="url"
-            fullWidth
-            variant="outlined"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://example.com/image.jpg"
-          />
+            <Input
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImageDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddImage} disabled={!imageUrl}>Insert URL Image</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setImageDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddImage} variant="contained" disabled={!imageUrl}>
-            Insert URL Image
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Video Dialog */}
-      <Dialog open={videoDialogOpen} onClose={() => setVideoDialogOpen(false)}>
-        <DialogTitle>Embed Video (YouTube)</DialogTitle>
-        <DialogContent sx={{ minWidth: 320, pt: 1 }}>
-          <TextField
+      <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed Video (YouTube)</DialogTitle>
+          </DialogHeader>
+          <Input
             autoFocus
-            margin="dense"
-            label="YouTube Video Link"
             type="url"
-            fullWidth
-            variant="outlined"
+            placeholder="https://www.youtube.com/watch?v=..."
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
           />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVideoDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddVideo} disabled={!videoUrl}>Embed Video</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setVideoDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddVideo} variant="contained" disabled={!videoUrl}>
-            Embed Video
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      {/* AI Prompt Builder Modal */}
       <PromptBuilderModal
         open={promptModalOpen}
         onClose={() => setPromptModalOpen(false)}
@@ -849,7 +560,7 @@ export const TipTapEditor = ({
           }
         }}
       />
-    </Paper>
+    </div>
   );
 };
 

@@ -50,7 +50,7 @@ export const subscribeChatRooms = (callback) => {
       }
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeChatRooms error:", error);
       }
       callback(DEFAULT_CHAT_ROOMS);
@@ -86,7 +86,7 @@ export const subscribeChatMessages = (roomId, callback) => {
       callback(messages);
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeChatMessages primary query error (falling back to memory sort):", error);
       }
       const fallbackQuery = query(
@@ -109,7 +109,7 @@ export const subscribeChatMessages = (roomId, callback) => {
           callback(messages);
         },
         (fallbackErr) => {
-          if (import.meta.env.DEV) console.error("subscribeChatMessages fallback error:", fallbackErr);
+          if (process.env.NODE_ENV !== "production") console.error("subscribeChatMessages fallback error:", fallbackErr);
           callback([]);
         }
       );
@@ -190,7 +190,7 @@ export const subscribeGlobalForums = (category = "all", callback) => {
       callback(sortTopics(topics));
     },
     (error) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV !== "production") {
         console.warn("subscribeGlobalForums primary query error (falling back to memory sort):", error);
       }
       const fallbackQuery = query(
@@ -210,7 +210,7 @@ export const subscribeGlobalForums = (category = "all", callback) => {
           callback(sortTopics(topics));
         },
         (fallbackErr) => {
-          if (import.meta.env.DEV) console.error("subscribeGlobalForums fallback error:", fallbackErr);
+          if (process.env.NODE_ENV !== "production") console.error("subscribeGlobalForums fallback error:", fallbackErr);
           callback([]);
         }
       );
